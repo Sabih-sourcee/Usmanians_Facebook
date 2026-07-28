@@ -1,51 +1,130 @@
-import React, { useEffect, useId, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ProfileHeader } from "../components/ProfileHeader";
 import { TabBar, TabItem } from "../components/TabBar";
 import { PostCard } from "../components/PostCard";
+import { CommentsSheet } from "../components/CommentsSheet";
+import { BottomSheet } from "../components/BottomSheet";
 import { useAuth } from "../context/AuthContext";
-import { mockUser, UserProfile } from "../data/mockUser";
-import { profilePosts, profileNotes } from "../data/mockPosts";
+import { fetchPostsByAuthor } from "../lib/api/posts";
+import { updateProfile } from "../lib/api/profiles";
+import { uploadUserFile } from "../lib/api/storage";
+import type { PostView } from "../types/models";
 
 export const ProfilePage: React.FC = () => {
-  const { user: authUser } = useAuth();
-  const [currentUser, setCurrentUser] = useState<UserProfile>(authUser || mockUser);
+  const { user, profile, logout, refreshProfile } = useAuth();
+  const [posts, setPosts] = useState<PostView[]>([]);
+  const [notes, setNotes] = useState<PostView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [commentPostId, setCommentPostId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editBio, setEditBio] = useState(currentUser.bio);
-  const [editBadge, setEditBadge] = useState(currentUser.badgeText);
-  const [editToast, setEditToast] = useState<string | null>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const titleId = useId();
+  const [editName, setEditName] = useState("");
+  const [editBio, setEditBio] = useState("");
+  const [editClass, setEditClass] = useState("");
+  const [editCampus, setEditCampus] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isEditing) return;
-    closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsEditing(false);
+    if (!user) return;
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([
+      fetchPostsByAuthor(user.id, user.id, "standard"),
+      fetchPostsByAuthor(user.id, user.id, "shared_notes"),
+    ]).then(([p, n]) => {
+      if (cancelled) return;
+      setPosts(p.data);
+      setNotes(n.data);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [isEditing]);
+  }, [user]);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  if (!user || !profile) {
+    return (
+      <div className="flex justify-center py-xl">
+        <span className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" aria-label="Loading" />
+      </div>
+    );
+  }
+
+  const openEdit = () => {
+    setEditName(profile.full_name || user.name);
+    setEditBio(profile.bio || "");
+    setEditClass(profile.class_name || "");
+    setEditCampus(profile.campus || "");
+    setAvatarFile(null);
+    setCoverFile(null);
+    setIsEditing(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setCurrentUser((prev) => ({
-      ...prev,
-      bio: editBio,
-      badgeText: editBadge,
-    }));
+    setSaving(true);
+    let avatarUrl = profile.avatar_url;
+    let coverUrl = profile.cover_url;
+
+    if (avatarFile) {
+      const up = await uploadUserFile("avatars", user.id, avatarFile);
+      if (up.error) {
+        setSaving(false);
+        setToast(up.error);
+        return;
+      }
+      avatarUrl = up.publicUrl;
+    }
+    if (coverFile) {
+      const up = await uploadUserFile("avatars", user.id, coverFile);
+      if (up.error) {
+        setSaving(false);
+        setToast(up.error);
+        return;
+      }
+      coverUrl = up.publicUrl;
+    }
+
+    const { error } = await updateProfile(user.id, {
+      full_name: editName.trim(),
+      bio: editBio.trim(),
+      class_name: editClass.trim(),
+      campus: editCampus.trim(),
+      avatar_url: avatarUrl,
+      cover_url: coverUrl,
+    });
+    setSaving(false);
+    if (error) {
+      setToast(error);
+      return;
+    }
     setIsEditing(false);
-    setEditToast("Profile updated successfully");
-    setTimeout(() => setEditToast(null), 3000);
+    await refreshProfile();
+    setToast("Profile updated");
+    setTimeout(() => setToast(null), 2500);
   };
 
   const tabs: TabItem[] = [
     {
       id: "posts",
       label: "Posts",
-      content: (
+      content: loading ? (
+        <div className="flex justify-center py-lg">
+          <span className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : posts.length === 0 ? (
+        <p className="text-body-md text-on-surface-variant text-center py-lg">No posts yet.</p>
+      ) : (
         <div className="flex flex-col gap-md">
-          {profilePosts.map((post) => (
-            <PostCard key={post.id} post={post} />
+          {posts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              onCommentClick={() => setCommentPostId(post.id)}
+              onDeleted={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
+            />
           ))}
         </div>
       ),
@@ -53,10 +132,21 @@ export const ProfilePage: React.FC = () => {
     {
       id: "notes",
       label: "Shared Notes",
-      content: (
+      content: loading ? (
+        <div className="flex justify-center py-lg">
+          <span className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : notes.length === 0 ? (
+        <p className="text-body-md text-on-surface-variant text-center py-lg">No shared notes yet.</p>
+      ) : (
         <div className="flex flex-col gap-md">
-          {profileNotes.map((note) => (
-            <PostCard key={note.id} post={note} />
+          {notes.map((note) => (
+            <PostCard
+              key={note.id}
+              post={note}
+              onCommentClick={() => setCommentPostId(note.id)}
+              onDeleted={(id) => setNotes((prev) => prev.filter((p) => p.id !== id))}
+            />
           ))}
         </div>
       ),
@@ -72,24 +162,32 @@ export const ProfilePage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-md text-body-md text-on-surface">
             <div>
               <span className="text-label-sm text-on-surface-variant block">Full Name</span>
-              <span className="font-semibold">{currentUser.name}</span>
+              <span className="font-semibold break-words">{user.name}</span>
             </div>
             <div>
               <span className="text-label-sm text-on-surface-variant block">Official Email</span>
-              <span className="font-semibold">{currentUser.email}</span>
+              <span className="font-semibold break-all">{user.email}</span>
             </div>
             <div>
-              <span className="text-label-sm text-on-surface-variant block">Academic Grade &amp; Campus</span>
-              <span className="font-semibold">{currentUser.badgeText}</span>
+              <span className="text-label-sm text-on-surface-variant block">Class</span>
+              <span className="font-semibold">{profile.class_name || "—"}</span>
             </div>
             <div>
-              <span className="text-label-sm text-on-surface-variant block">Student Portal Status</span>
+              <span className="text-label-sm text-on-surface-variant block">Campus</span>
+              <span className="font-semibold">{profile.campus || "—"}</span>
+            </div>
+            <div>
+              <span className="text-label-sm text-on-surface-variant block">Student CID</span>
+              <span className="font-semibold">{profile.student_cid || "—"}</span>
+            </div>
+            <div>
+              <span className="text-label-sm text-on-surface-variant block">Status</span>
               <span className="font-semibold text-primary">Verified member</span>
             </div>
           </div>
           <div className="pt-sm border-t border-surface-container-highest">
             <span className="text-label-sm text-on-surface-variant block mb-xs">Biography</span>
-            <p className="text-body-md text-on-surface leading-relaxed">{currentUser.bio}</p>
+            <p className="text-body-md text-on-surface leading-relaxed">{user.bio || "No bio yet."}</p>
           </div>
         </div>
       ),
@@ -97,104 +195,110 @@ export const ProfilePage: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col w-full">
-      <div aria-live="polite" className="sr-only">
-        {editToast}
-      </div>
-      {editToast && (
-        <div className="mb-md bg-primary text-on-primary p-md rounded-xl text-center text-body-sm shadow-md fade-toast" role="status">
-          {editToast}
+    <div className="flex flex-col w-full gap-md">
+      {toast && (
+        <div className="bg-primary text-on-primary p-md rounded-xl text-center text-body-sm shadow-md fade-toast" role="status">
+          {toast}
         </div>
       )}
 
-      <ProfileHeader
-        user={currentUser}
-        onEditProfile={() => {
-          setEditBio(currentUser.bio);
-          setEditBadge(currentUser.badgeText);
-          setIsEditing(true);
-        }}
-      />
+      <ProfileHeader user={user} onEditProfile={openEdit} />
+
+      <button
+        type="button"
+        onClick={() => void logout()}
+        className="w-full min-h-[48px] rounded-xl border border-outline-variant text-on-surface font-semibold hover:bg-surface-container cursor-pointer"
+      >
+        Log out
+      </button>
 
       <TabBar tabs={tabs} defaultTabId="posts" />
 
-      {isEditing && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-md bg-black/50"
-          role="presentation"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsEditing(false);
-          }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            className="bg-surface-container-lowest w-full max-w-md rounded-xl p-lg shadow-xl space-y-md border border-outline-variant/20"
-          >
-            <div className="flex justify-between items-center gap-sm">
-              <h3 id={titleId} className="text-headline-md text-on-surface">
-                Edit Profile
-              </h3>
-              <button
-                ref={closeRef}
-                type="button"
-                aria-label="Close"
-                onClick={() => setIsEditing(false)}
-                className="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:bg-surface-container rounded-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            </div>
+      <CommentsSheet postId={commentPostId} onClose={() => setCommentPostId(null)} />
 
-            <form onSubmit={handleSaveProfile} className="space-y-md">
-              <div className="space-y-xs">
-                <label className="text-label-md text-on-surface block" htmlFor="edit-badge">
-                  Class Badge / Campus
-                </label>
-                <input
-                  id="edit-badge"
-                  type="text"
-                  value={editBadge}
-                  onChange={(e) => setEditBadge(e.target.value)}
-                  className="w-full h-12 px-md rounded-lg bg-surface-container-low border border-outline-variant/40 focus:border-primary focus:ring-2 focus:ring-primary/20 text-body-md text-on-surface focus:outline-none"
-                />
-              </div>
-
-              <div className="space-y-xs">
-                <label className="text-label-md text-on-surface block" htmlFor="edit-bio">
-                  Bio
-                </label>
-                <textarea
-                  id="edit-bio"
-                  rows={4}
-                  value={editBio}
-                  onChange={(e) => setEditBio(e.target.value)}
-                  className="w-full p-sm bg-surface-container-low rounded-lg border border-outline-variant/40 focus:border-primary focus:ring-2 focus:ring-primary/20 text-body-md text-on-surface focus:outline-none"
-                />
-              </div>
-
-              <div className="flex gap-sm pt-xs">
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="flex-1 min-h-[48px] bg-surface-container-high text-on-surface text-label-md rounded-xl cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 min-h-[48px] bg-primary text-on-primary text-label-md rounded-xl hover:bg-primary-container active:scale-[0.98] transition-all duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-                >
-                  Save changes
-                </button>
-              </div>
-            </form>
+      <BottomSheet open={isEditing} title="Edit profile" onClose={() => setIsEditing(false)}>
+        <form onSubmit={handleSave} className="space-y-md">
+          <div className="space-y-xs">
+            <label className="text-label-md" htmlFor="edit-name">
+              Full name
+            </label>
+            <input
+              id="edit-name"
+              required
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="w-full h-12 px-md rounded-lg bg-surface-container-low border border-outline-variant/40"
+            />
           </div>
-        </div>
-      )}
+          <div className="space-y-xs">
+            <label className="text-label-md" htmlFor="edit-bio">
+              Bio
+            </label>
+            <textarea
+              id="edit-bio"
+              rows={3}
+              value={editBio}
+              onChange={(e) => setEditBio(e.target.value)}
+              className="w-full px-md py-sm rounded-lg bg-surface-container-low border border-outline-variant/40 resize-none"
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
+            <div className="space-y-xs">
+              <label className="text-label-md" htmlFor="edit-class">
+                Class
+              </label>
+              <input
+                id="edit-class"
+                value={editClass}
+                onChange={(e) => setEditClass(e.target.value)}
+                className="w-full h-12 px-md rounded-lg bg-surface-container-low border border-outline-variant/40"
+              />
+            </div>
+            <div className="space-y-xs">
+              <label className="text-label-md" htmlFor="edit-campus">
+                Campus
+              </label>
+              <input
+                id="edit-campus"
+                value={editCampus}
+                onChange={(e) => setEditCampus(e.target.value)}
+                className="w-full h-12 px-md rounded-lg bg-surface-container-low border border-outline-variant/40"
+              />
+            </div>
+          </div>
+          <div className="space-y-xs">
+            <label className="text-label-md" htmlFor="edit-avatar">
+              Avatar photo
+            </label>
+            <input
+              id="edit-avatar"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
+              className="w-full text-body-sm"
+            />
+          </div>
+          <div className="space-y-xs">
+            <label className="text-label-md" htmlFor="edit-cover">
+              Cover photo
+            </label>
+            <input
+              id="edit-cover"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+              className="w-full text-body-sm"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full min-h-[48px] bg-primary text-on-primary font-semibold rounded-xl disabled:opacity-50 cursor-pointer"
+          >
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+        </form>
+      </BottomSheet>
     </div>
   );
 };

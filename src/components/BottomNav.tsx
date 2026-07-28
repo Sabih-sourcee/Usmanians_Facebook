@@ -1,9 +1,11 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export const BottomNav: React.FC = () => {
   const location = useLocation();
   const currentPath = location.pathname;
+  const { profile } = useAuth();
 
   const navItems = [
     {
@@ -16,8 +18,8 @@ export const BottomNav: React.FC = () => {
       ),
     },
     {
-      label: "Groups",
-      path: "/groups",
+      label: "Friends",
+      path: "/friends",
       icon: (active: boolean) => (
         <svg className="w-6 h-6" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" strokeLinecap="round" strokeLinejoin="round" />
@@ -27,8 +29,8 @@ export const BottomNav: React.FC = () => {
     {
       label: "Activity",
       path: "/activity",
-      icon: (_active: boolean) => (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+      icon: (active: boolean) => (
+        <svg className="w-6 h-6" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M13 10V3L4 14h7v7l9-11h-7z" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ),
@@ -43,6 +45,18 @@ export const BottomNav: React.FC = () => {
       ),
     },
   ];
+
+  if (profile?.role === "admin") {
+    navItems.splice(3, 0, {
+      label: "Admin",
+      path: "/admin",
+      icon: (active: boolean) => (
+        <svg className="w-6 h-6" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ),
+    });
+  }
 
   return (
     <nav
@@ -62,7 +76,7 @@ export const BottomNav: React.FC = () => {
               to={item.path}
               aria-label={item.label}
               aria-current={isActive ? "page" : undefined}
-              className={`relative flex flex-col items-center justify-center gap-0.5 transition-colors duration-200 min-w-[64px] min-h-[48px] rounded-lg cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
+              className={`relative flex flex-col items-center justify-center gap-0.5 transition-colors duration-200 min-w-[56px] min-h-[48px] rounded-lg cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
                 isActive ? "text-primary" : "text-on-surface-variant hover:text-on-surface"
               }`}
             >
@@ -70,7 +84,7 @@ export const BottomNav: React.FC = () => {
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-primary" aria-hidden="true" />
               )}
               {item.icon(isActive)}
-              <span className={`text-label-sm ${isActive ? "font-semibold" : ""}`}>{item.label}</span>
+              <span className={`text-[11px] leading-tight ${isActive ? "font-semibold" : ""}`}>{item.label}</span>
             </Link>
           );
         })}

@@ -1,6 +1,6 @@
 # Usmanian — Project Context
 
-Private network for **Usman Public School System** students & alumni. React 19 + Vite 6 + React Router 7 + Tailwind CSS v4. Mock auth only. Dev: `npm run dev` → http://localhost:3000.
+Private network for **Usman Public School System** students & alumni. React 19 + Vite 6 + React Router 7 + Tailwind CSS v4 + Supabase (Auth, Postgres, Storage, Realtime). Dev: `npm run dev` → http://localhost:3000.
 
 **AI agents: read this file first.** Brand source: `Usmanian_Brand_Guidelines.docx` (v1.0 / 2026).
 
@@ -39,15 +39,30 @@ Personality: Trusted · Warm · Grounded · Clear (no unnecessary decoration).
 
 ## Stack / routes
 
-Entry: `main.tsx` → `App.tsx` + `index.css`. Auth: `AuthContext` (in-memory).
+Entry: `main.tsx` → `App.tsx` + `index.css`. Auth: `AuthContext` → Supabase Auth + `profiles`. **No mock data** — feed/friends/activity/profile load from Supabase via `src/lib/api/*`.
 
 | Path | Access | Page |
 |------|--------|------|
 | `/login` `/signup` | PublicOnly | AuthCard |
-| `/pending-approval` | Open | AuthCard pending |
-| `/` `/feed` `/profile` `/groups` `/activity` | Protected + AppShell | feed pages |
+| `/pending-approval` | Session + not approved | AuthCard pending |
+| `/` `/feed` | Protected + AppShell | Composer, feed, vote, report |
+| `/friends` (`/groups` → redirect) | Protected | Friend search / requests |
+| `/activity` | Protected | Notifications |
+| `/profile` | Protected | Edit profile, posts, notes, logout |
+| `/admin` | Protected (admin role) | Approve/reject pending profiles |
 
-AppShell: Header + main (`pt` 56px+safe) + BottomNav; `max-w-2xl`; `min-h-dvh`; `.app-canvas`.
+AppShell: Header + main (`pt` 56px+safe) + BottomNav; `max-w-2xl`; `min-h-dvh`; `.app-canvas`. Mobile-first: bottom sheets, safe-area padding, 44px targets.
+
+### Supabase
+
+- Project: `nwygelibbklfvgnfmtrd` → https://nwygelibbklfvgnfmtrd.supabase.co
+- Client: `src/lib/supabase.ts` (`VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`)
+- Tables: `profiles`, `posts`, `post_likes`, `post_comments`, `friendships`, `notifications`, `teacher_reports`, `principal_candidates`, `principal_votes`
+- Buckets: `avatars` (public), `post-images` (public), `attachments` (private, signed URLs) — path `{user_id}/{filename}`
+- Realtime: `posts`, `post_likes`, `post_comments`, `notifications`
+- Migrations: `supabase/migrations/` (01–07). Signup creates `profiles` via `handle_new_user` (`pending`).
+- Auth statuses: `loading` → `loggedOut` | `pendingApproval` | `loggedIn` (approved only)
+- Make admin: `update profiles set role = 'admin' where id = '<uuid>';`
 
 ---
 

@@ -10,7 +10,8 @@ const inputClass =
   "w-full h-12 px-md rounded-lg bg-surface-container-low border border-outline-variant/40 text-body-md text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors duration-200";
 
 export const AuthCard: React.FC<AuthCardProps> = ({ initialMode }) => {
-  const { authStatus, login, signup, simulateApproval, logout } = useAuth();
+  const { authStatus, login, signup, logout, refreshProfile, authError, clearAuthError } =
+    useAuth();
   const navigate = useNavigate();
 
   const [internalMode, setInternalMode] = useState<"login" | "signup">(
@@ -21,8 +22,11 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode }) => {
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const [signupName, setSignupName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
   const [signupCid, setSignupCid] = useState("");
   const [signupClass, setSignupClass] = useState("");
   const [signupCampus, setSignupCampus] = useState("Main Campus");
@@ -32,45 +36,67 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode }) => {
     else if (initialMode === "login") setInternalMode("login");
   }, [initialMode]);
 
+  useEffect(() => {
+    clearAuthError();
+    setFormError(null);
+  }, [internalMode, clearAuthError]);
+
   const currentView =
     authStatus === "pendingApproval"
       ? "pending"
       : authStatus === "loggedIn"
-      ? "loggedIn"
-      : internalMode;
+        ? "loggedIn"
+        : internalMode;
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const displayError = formError || authError;
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     setIsLoading(true);
-    setTimeout(() => {
-      login(loginEmail || "name@alumni.edu", loginPassword);
-      setIsLoading(false);
-      navigate("/");
-    }, 600);
+    const { error } = await login(loginEmail, loginPassword);
+    setIsLoading(false);
+    if (error) {
+      setFormError(error);
+      return;
+    }
+    // ProtectedRoute / PublicOnlyRoute will redirect based on verification_status
+    navigate("/");
   };
 
-  const handleSignupSubmit = (e: React.FormEvent) => {
+  const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
+
+    if (signupPassword.length < 8) {
+      setFormError("Password must be at least 8 characters.");
+      return;
+    }
+
     setIsLoading(true);
-    setTimeout(() => {
-      signup({
-        fullName: signupName || "Abdullah Usman",
-        cid: signupCid || "CID-000000",
-        className: signupClass || "Year 2-B",
-        campus: signupCampus,
-      });
-      setIsLoading(false);
-      navigate("/pending-approval");
-    }, 800);
+    const { error } = await signup({
+      fullName: signupName.trim(),
+      email: signupEmail.trim(),
+      password: signupPassword,
+      cid: signupCid.trim(),
+      className: signupClass.trim(),
+      campus: signupCampus,
+    });
+    setIsLoading(false);
+
+    if (error) {
+      setFormError(error);
+      return;
+    }
+
+    navigate("/pending-approval");
   };
 
-  const handleSimulateApprovalClick = () => {
+  const handleRefreshStatus = async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      simulateApproval();
-      setIsLoading(false);
-      navigate("/");
-    }, 600);
+    setFormError(null);
+    await refreshProfile();
+    setIsLoading(false);
   };
 
   if (currentView === "loggedIn") {
@@ -166,6 +192,12 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode }) => {
               </div>
             </div>
 
+            {displayError && (
+              <p className="text-label-md text-error" role="alert">
+                {displayError}
+              </p>
+            )}
+
             <button
               type="submit"
               disabled={isLoading}
@@ -230,6 +262,39 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode }) => {
                   type="text"
                   value={signupName}
                   onChange={(e) => setSignupName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-xs w-full">
+                <label className="text-label-md text-on-surface block" htmlFor="signup-email">
+                  Email Address
+                </label>
+                <input
+                  className={inputClass}
+                  id="signup-email"
+                  autoComplete="email"
+                  placeholder="name@alumni.edu"
+                  type="email"
+                  value={signupEmail}
+                  onChange={(e) => setSignupEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-xs w-full">
+                <label className="text-label-md text-on-surface block" htmlFor="signup-password">
+                  Password
+                </label>
+                <input
+                  className={inputClass}
+                  id="signup-password"
+                  autoComplete="new-password"
+                  placeholder="At least 8 characters"
+                  type="password"
+                  value={signupPassword}
+                  onChange={(e) => setSignupPassword(e.target.value)}
+                  minLength={8}
                   required
                 />
               </div>
@@ -300,6 +365,12 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode }) => {
               </div>
             </div>
 
+            {displayError && (
+              <p className="text-label-md text-error" role="alert">
+                {displayError}
+              </p>
+            )}
+
             <button
               type="submit"
               disabled={isLoading}
@@ -341,29 +412,24 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode }) => {
               <line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
             <p className="text-label-md text-on-surface">
-              Verification usually takes 24–48 hours. You'll receive an email once confirmed.
+              Verification usually takes 24–48 hours. You'll receive a notification once confirmed.
             </p>
-          </div>
-
-          <div className="pt-sm border-t border-dashed border-outline-variant/60">
-            <button
-              type="button"
-              onClick={handleSimulateApprovalClick}
-              disabled={isLoading}
-              className="w-full min-h-[44px] py-sm px-md bg-secondary/10 hover:bg-secondary/20 text-secondary text-body-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary/20 disabled:opacity-50"
-            >
-              <span className="text-label-sm font-semibold px-1.5 py-0.5 bg-secondary text-on-secondary rounded">
-                Dev only
-              </span>
-              <span>Simulate admin approval</span>
-            </button>
           </div>
 
           <button
             type="button"
+            onClick={handleRefreshStatus}
+            disabled={isLoading}
+            className="w-full min-h-[44px] py-sm px-md bg-secondary/10 hover:bg-secondary/20 text-secondary text-body-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary/20 disabled:opacity-50"
+          >
+            {isLoading ? "Checking…" : "Check verification status"}
+          </button>
+
+          <button
+            type="button"
             aria-label="Return to login screen"
-            onClick={() => {
-              logout();
+            onClick={async () => {
+              await logout();
               setInternalMode("login");
               navigate("/login");
             }}

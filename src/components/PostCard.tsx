@@ -1,23 +1,36 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Post } from "../data/mockPosts";
+import type { PostView } from "../types/models";
+import { useAuth } from "../context/AuthContext";
+import { deletePost, toggleLike } from "../lib/api/posts";
+import { shareText } from "../lib/share";
 
 interface PostCardProps {
-  post: Post;
+  post: PostView;
   onCommentClick?: () => void;
-  onShareClick?: () => void;
+  onDeleted?: (postId: string) => void;
+  onLikeChange?: (postId: string, liked: boolean, likes: number) => void;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({
   post,
   onCommentClick,
-  onShareClick,
+  onDeleted,
+  onLikeChange,
 }) => {
-  const [liked, setLiked] = useState<boolean>(post.liked || false);
-  const [likeCount, setLikeCount] = useState<number>(post.likes);
-  const [isSaved, setIsSaved] = useState<boolean>(false);
-  const [showOptions, setShowOptions] = useState<boolean>(false);
+  const { user } = useAuth();
+  const [liked, setLiked] = useState(Boolean(post.liked));
+  const [likeCount, setLikeCount] = useState(post.likes);
+  const [commentCount, setCommentCount] = useState(post.comments);
+  const [showOptions, setShowOptions] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setLiked(Boolean(post.liked));
+    setLikeCount(post.likes);
+    setCommentCount(post.comments);
+  }, [post.id, post.liked, post.likes, post.comments]);
 
   useEffect(() => {
     if (!showOptions) return;
@@ -30,222 +43,210 @@ export const PostCard: React.FC<PostCardProps> = ({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [showOptions]);
 
-  const handleLike = () => {
-    setLiked((prev) => !prev);
-    setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
-  };
-
   const flashToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2500);
   };
 
-  const handleAction = (actionName: string) => {
-    if (actionName === "Save") {
-      setIsSaved(!isSaved);
-      flashToast(!isSaved ? "Saved to your bookmarks" : "Removed from bookmarks");
-    } else if (actionName === "Share") {
-      flashToast("Link copied to clipboard");
-      onShareClick?.();
-    } else if (actionName === "Comment") {
-      if (onCommentClick) onCommentClick();
-      else flashToast("Comments coming soon");
+  const handleLike = async () => {
+    if (!user || busy) return;
+    const prevLiked = liked;
+    const prevCount = likeCount;
+    const nextLiked = !liked;
+    const nextCount = likeCount + (nextLiked ? 1 : -1);
+    setLiked(nextLiked);
+    setLikeCount(nextCount);
+    setBusy(true);
+    const { error } = await toggleLike(post.id, user.id, prevLiked);
+    setBusy(false);
+    if (error) {
+      setLiked(prevLiked);
+      setLikeCount(prevCount);
+      flashToast(error);
+      return;
     }
+    onLikeChange?.(post.id, nextLiked, nextCount);
   };
 
-  const hasAttachment = Boolean(post.attachment?.fileName);
-  const hasImage = Boolean(post.attachment?.imageUrl);
+  const handleShare = async () => {
+    const result = await shareText("Usmanian", post.content.slice(0, 140));
+    flashToast(result.message);
+  };
+
+  const handleDelete = async () => {
+    setShowOptions(false);
+    const { error } = await deletePost(post.id);
+    if (error) {
+      flashToast(error);
+      return;
+    }
+    onDeleted?.(post.id);
+  };
+
+  const hasAttachment = Boolean(post.attachment?.fileName && !post.attachment?.imageUrl);
+  const imageSrc = post.attachment?.imageUrl || post.imageUrl || null;
+  const isOwner = user?.id === post.authorId;
   const actionBtn =
     "min-h-[44px] min-w-[44px] px-sm flex items-center gap-xs text-on-surface-variant hover:text-primary transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 rounded-lg cursor-pointer";
 
   return (
-    <article className="bg-surface-container-lowest rounded-xl border border-outline-variant/20 flex flex-col relative">
+    <article className="bg-surface-container-lowest rounded-xl border border-outline-variant/20 flex flex-col relative overflow-hidden">
       <div aria-live="polite" className="sr-only">
         {toastMessage}
       </div>
       {toastMessage && (
-        <div className="absolute top-2 right-2 z-10 bg-inverse-surface text-inverse-on-surface px-sm py-xs rounded-lg text-body-sm shadow-lg fade-toast pointer-events-none">
+        <div className="absolute top-2 right-2 z-10 bg-inverse-surface text-inverse-on-surface px-sm py-xs rounded-lg text-body-sm shadow-lg fade-toast pointer-events-none max-w-[70%]">
           {toastMessage}
         </div>
       )}
 
-      <div className="p-md flex items-center gap-md">
+      <div className="p-md flex items-center gap-md min-w-0">
         {post.categoryHeader ? (
-          <div className="flex items-center gap-sm min-w-0">
+          <div className="flex items-center gap-sm min-w-0 flex-1">
             <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary shrink-0">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M22 10v6M2 10l10-5 10 5-10 5z" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-label-md text-on-surface font-semibold truncate">{post.categoryHeader}</span>
-              <span className="text-label-sm text-on-surface-variant">{post.author.timestamp}</span>
+            <div className="min-w-0">
+              <p className="text-label-md font-semibold text-secondary truncate">{post.categoryHeader}</p>
+              <p className="text-label-sm text-on-surface-variant truncate">
+                {post.author.name} · {post.author.timestamp}
+              </p>
             </div>
           </div>
         ) : (
-          <>
+          <div className="flex items-center gap-sm min-w-0 flex-1">
             <img
+              src={post.author.avatar}
               alt=""
               className="w-10 h-10 rounded-full object-cover shrink-0"
               width={40}
               height={40}
-              src={post.author.avatar}
             />
-            <div className="flex flex-col min-w-0">
-              <span className="text-body-md font-semibold text-on-surface truncate">{post.author.name}</span>
-              <span className="text-label-sm text-on-surface-variant">{post.author.timestamp}</span>
+            <div className="min-w-0">
+              <p className="text-body-md font-semibold text-on-surface truncate">{post.author.name}</p>
+              <p className="text-label-sm text-on-surface-variant">{post.author.timestamp}</p>
             </div>
-          </>
+          </div>
         )}
 
-        <div className="ml-auto relative" ref={menuRef}>
+        <div className="relative shrink-0" ref={menuRef}>
           <button
             type="button"
-            aria-label="More options"
+            aria-label="Post options"
             aria-expanded={showOptions}
-            onClick={() => setShowOptions(!showOptions)}
-            className="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:bg-surface-container focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 rounded-full transition-colors cursor-pointer"
+            onClick={() => setShowOptions((v) => !v)}
+            className="w-11 h-11 flex items-center justify-center text-on-surface-variant rounded-full hover:bg-surface-container cursor-pointer"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" strokeLinecap="round" strokeLinejoin="round" />
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
             </svg>
           </button>
           {showOptions && (
-            <div className="absolute right-0 top-12 w-44 bg-surface-container-lowest shadow-lg rounded-xl border border-outline-variant/30 py-xs z-20">
+            <div className="absolute right-0 top-11 z-20 w-40 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg py-xs">
               <button
                 type="button"
-                onClick={() => {
-                  setShowOptions(false);
-                  handleAction("Save");
-                }}
-                className="w-full text-left px-md py-sm min-h-[44px] text-body-sm text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer"
+                onClick={handleShare}
+                className="w-full text-left px-md py-sm min-h-[44px] text-body-sm hover:bg-surface-container cursor-pointer"
               >
-                {isSaved ? "Unsave Post" : "Save Post"}
+                Share
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowOptions(false);
-                  flashToast("Report submitted to moderation");
-                }}
-                className="w-full text-left px-md py-sm min-h-[44px] text-body-sm text-error hover:bg-error-container/30 transition-colors cursor-pointer"
-              >
-                Report Post
-              </button>
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="w-full text-left px-md py-sm min-h-[44px] text-body-sm text-error hover:bg-surface-container cursor-pointer"
+                >
+                  Delete
+                </button>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      <div className={`px-md ${hasAttachment || hasImage ? "pb-sm" : "pb-md"}`}>
-        <p className="text-body-md text-on-surface leading-relaxed mb-sm">{post.content}</p>
-
-        {hasImage && (
-          <div className="aspect-video w-full rounded-lg overflow-hidden bg-surface-container my-md">
-            <img
-              className="w-full h-full object-cover"
-              src={post.attachment?.imageUrl}
-              alt="Post attachment"
-              loading="lazy"
-            />
-          </div>
-        )}
-
-        {hasAttachment && !hasImage && (
-          <div className="bg-surface-container rounded-xl p-md flex flex-col gap-sm my-xs">
-            <div className="flex items-center gap-md">
-              <div className="w-12 h-12 rounded-lg bg-error-container flex items-center justify-center text-error shrink-0">
-                <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-body-md font-semibold text-on-surface truncate">{post.attachment?.fileName}</span>
-                <span className="text-label-sm text-on-surface-variant">{post.attachment?.fileSize}</span>
-              </div>
-            </div>
-            {post.attachment?.categories && post.attachment.categories.length > 0 && (
-              <div className="flex flex-wrap gap-xs pt-xs">
-                {post.attachment.categories.map((cat, idx) => (
-                  <span
-                    key={idx}
-                    className="px-sm py-1 rounded-full bg-surface-container-high text-on-surface text-label-sm uppercase tracking-wider font-medium"
-                  >
-                    {cat}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {post.tags && post.tags.length > 0 && (
-          <div className="mt-md flex gap-xs flex-wrap">
-            {post.tags.map((tag, idx) => (
-              <span key={idx} className="px-sm py-xs bg-surface-container text-on-surface-variant rounded-full text-label-sm">
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
+      <div className="px-md pb-sm">
+        <p className="text-body-md text-on-surface whitespace-pre-wrap break-words">{post.content}</p>
       </div>
 
-      <div className="px-sm py-xs flex items-center justify-between border-t border-surface-container-highest">
-        <div className="flex items-center gap-xs">
-          <button
-            type="button"
-            onClick={handleLike}
-            aria-pressed={liked}
-            aria-label={liked ? `Unlike, ${likeCount} likes` : `Like, ${likeCount} likes`}
-            className={actionBtn}
-          >
-            <svg
-              className={`w-5 h-5 ${liked ? "fill-error text-error" : "fill-none stroke-current"}`}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span className="text-label-md">{likeCount}</span>
-          </button>
-
-          <button type="button" aria-label={`${post.comments} comments`} onClick={() => handleAction("Comment")} className={actionBtn}>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="text-label-md">{post.comments}</span>
-          </button>
+      {imageSrc && (
+        <div className="w-full max-h-[420px] bg-surface-container overflow-hidden">
+          <img src={imageSrc} alt="" className="w-full h-auto max-h-[420px] object-cover" />
         </div>
+      )}
 
+      {hasAttachment && post.attachment && (
+        <div className="mx-md mb-sm p-md rounded-lg bg-surface-container-low border border-outline-variant/40 flex items-center gap-md min-w-0">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-body-sm font-semibold text-on-surface truncate">{post.attachment.fileName}</p>
+            {post.attachment.categories?.length ? (
+              <p className="text-label-sm text-on-surface-variant truncate">
+                {post.attachment.categories.join(" · ")}
+              </p>
+            ) : null}
+          </div>
+          {post.attachment.downloadUrl && (
+            <a
+              href={post.attachment.downloadUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="min-h-[44px] px-md inline-flex items-center text-label-md text-primary font-semibold"
+            >
+              Open
+            </a>
+          )}
+        </div>
+      )}
+
+      <div className="px-sm py-xs border-t border-outline-variant/30 flex items-center justify-between gap-xs">
+        <button type="button" aria-pressed={liked} aria-label={`${likeCount} likes`} onClick={handleLike} className={actionBtn}>
+          <svg
+            className={`w-5 h-5 ${liked ? "text-error fill-current" : ""}`}
+            fill={liked ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span className="text-label-md">{likeCount}</span>
+        </button>
         <button
           type="button"
-          aria-label={hasAttachment ? (isSaved ? "Unsave" : "Save") : "Share"}
-          onClick={() => handleAction(hasAttachment ? "Save" : "Share")}
+          aria-label={`${commentCount} comments`}
+          onClick={() => onCommentClick?.()}
           className={actionBtn}
         >
-          {hasAttachment ? (
-            <>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span className="text-label-md">{isSaved ? "Saved" : "Save"}</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span className="text-label-md">Share</span>
-            </>
-          )}
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span className="text-label-md">{commentCount}</span>
+        </button>
+        <button type="button" aria-label="Share post" onClick={handleShare} className={actionBtn}>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span className="text-label-md">Share</span>
         </button>
       </div>
     </article>
