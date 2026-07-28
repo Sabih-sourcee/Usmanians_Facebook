@@ -1,0 +1,6 @@
+{
+  "name": "Usmanian",
+  "description": "Usmanian private portal for students and alumni featuring home feed, profile, shared notes, and account verification.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

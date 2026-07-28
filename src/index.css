@@ -1,0 +1,255 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+/*
+  Usmanian Brand Guidelines v1.0 — source of truth.
+  Primary Green #0B6E3D · Primary Dark #084D2A · Gold text #8A6200 · Gold decorative #D4A017
+  Background #FAFAF8 · Surface #FFFFFF · Text #1A1A1A / #6B6B6B · Border #E5E5E0 · Error #C0392B
+  Type: Inter. Never put named keys on --spacing-* (breaks max-w-md).
+*/
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+    touch-action: manipulation;
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    background-color: #fafaf8;
+    color: #1a1a1a;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Flat brand canvases — warm off-white, no decorative AI gradients */
+.app-canvas {
+  background-color: #fafaf8;
+}
+
+.auth-canvas {
+  background-color: #fafaf8;
+}
+
+.fade-toast {
+  animation: fade-toast 180ms ease-out;
+}
+
+@keyframes fade-toast {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility max-w-xs { max-width: 20rem; }
+@utility max-w-sm { max-width: 24rem; }
+@utility max-w-md { max-width: 28rem; }
+@utility max-w-lg { max-width: 32rem; }
+@utility max-w-xl { max-width: 36rem; }
+@utility max-w-2xl { max-width: 42rem; }
+@utility max-w-3xl { max-width: 48rem; }
+@utility max-w-4xl { max-width: 56rem; }
+@utility max-w-5xl { max-width: 64rem; }
+
+@utility p-xs { padding: 4px; }
+@utility p-sm { padding: 8px; }
+@utility p-md { padding: 16px; }
+@utility p-lg { padding: 24px; }
+@utility p-xl { padding: 32px; }
+
+@utility px-xs { padding-left: 4px; padding-right: 4px; }
+@utility px-sm { padding-left: 8px; padding-right: 8px; }
+@utility px-md { padding-left: 16px; padding-right: 16px; }
+@utility px-lg { padding-left: 24px; padding-right: 24px; }
+@utility px-xl { padding-left: 32px; padding-right: 32px; }
+@utility px-margin-mobile { padding-left: 16px; padding-right: 16px; }
+
+@utility py-xs { padding-top: 4px; padding-bottom: 4px; }
+@utility py-sm { padding-top: 8px; padding-bottom: 8px; }
+@utility py-md { padding-top: 16px; padding-bottom: 16px; }
+@utility py-lg { padding-top: 24px; padding-bottom: 24px; }
+@utility py-xl { padding-top: 32px; padding-bottom: 32px; }
+
+@utility gap-xs { gap: 4px; }
+@utility gap-sm { gap: 8px; }
+@utility gap-md { gap: 16px; }
+@utility gap-lg { gap: 24px; }
+@utility gap-xl { gap: 32px; }
+
+@utility space-y-xs { & > :not([hidden]) ~ :not([hidden]) { margin-top: 4px; } }
+@utility space-y-sm { & > :not([hidden]) ~ :not([hidden]) { margin-top: 8px; } }
+@utility space-y-md { & > :not([hidden]) ~ :not([hidden]) { margin-top: 16px; } }
+@utility space-y-lg { & > :not([hidden]) ~ :not([hidden]) { margin-top: 24px; } }
+@utility space-y-xl { & > :not([hidden]) ~ :not([hidden]) { margin-top: 32px; } }
+
+@utility space-x-xs { & > :not([hidden]) ~ :not([hidden]) { margin-left: 4px; } }
+@utility space-x-sm { & > :not([hidden]) ~ :not([hidden]) { margin-left: 8px; } }
+@utility space-x-md { & > :not([hidden]) ~ :not([hidden]) { margin-left: 16px; } }
+@utility space-x-lg { & > :not([hidden]) ~ :not([hidden]) { margin-left: 24px; } }
+@utility space-x-xl { & > :not([hidden]) ~ :not([hidden]) { margin-left: 32px; } }
+
+/* Brand type scale (Inter) */
+@utility text-headline-xl {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 24px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+@utility text-headline-lg {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 24px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+@utility text-headline-md {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+@utility text-body-lg {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+@utility text-body-md {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+@utility text-body-sm {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+@utility text-label-md {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 500;
+}
+@utility text-label-sm {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
+}
+
+@theme {
+  --container-xs: 20rem;
+  --container-sm: 24rem;
+  --container-md: 28rem;
+  --container-lg: 32rem;
+  --container-xl: 36rem;
+  --container-2xl: 42rem;
+  --container-3xl: 48rem;
+
+  /* Brand primary */
+  --color-primary: #0b6e3d;
+  --color-primary-container: #084d2a;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #ffffff;
+  --color-primary-fixed: #d8f0e4;
+  --color-primary-fixed-dim: #a8d9c0;
+  --color-on-primary-fixed: #084d2a;
+  --color-on-primary-fixed-variant: #0b6e3d;
+  --color-inverse-primary: #7dcb9f;
+  --color-surface-tint: #0b6e3d;
+
+  /* Accent gold — secondary = text-safe; secondary-container = decorative only */
+  --color-secondary: #8a6200;
+  --color-secondary-container: #d4a017;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #1a1a1a;
+  --color-secondary-fixed: #f5e6b8;
+  --color-secondary-fixed-dim: #e8c96a;
+  --color-on-secondary-fixed: #8a6200;
+  --color-on-secondary-fixed-variant: #5c4300;
+
+  /* Neutrals */
+  --color-background: #fafaf8;
+  --color-on-background: #1a1a1a;
+  --color-surface: #fafaf8;
+  --color-surface-bright: #fafaf8;
+  --color-surface-dim: #f0f0ec;
+  --color-surface-variant: #e5e5e0;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f5f5f2;
+  --color-surface-container: #f0f0ec;
+  --color-surface-container-high: #ebebe6;
+  --color-surface-container-highest: #e5e5e0;
+  --color-on-surface: #1a1a1a;
+  --color-on-surface-variant: #6b6b6b;
+  --color-outline: #6b6b6b;
+  --color-outline-variant: #e5e5e0;
+
+  /* Error */
+  --color-error: #c0392b;
+  --color-on-error: #ffffff;
+  --color-error-container: #fde8e6;
+  --color-on-error-container: #8b1e14;
+
+  /* Inverse / misc */
+  --color-inverse-surface: #1a1a1a;
+  --color-inverse-on-surface: #fafaf8;
+
+  /* Legacy aliases → brand (components still use these names) */
+  --color-accent: #0b6e3d;
+  --color-accent-contrast: #ffffff;
+  --color-tertiary: #0b6e3d;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #084d2a;
+  --color-on-tertiary-container: #ffffff;
+  --color-tertiary-fixed: #f5e6b8;
+  --color-tertiary-fixed-dim: #d4a017;
+  --color-on-tertiary-fixed: #8a6200;
+  --color-on-tertiary-fixed-variant: #5c4300;
+
+  --font-headline-lg: Inter, system-ui, sans-serif;
+  --font-headline-xl: Inter, system-ui, sans-serif;
+  --font-headline-md: Inter, system-ui, sans-serif;
+  --font-headline-lg-mobile: Inter, system-ui, sans-serif;
+  --font-body-lg: Inter, system-ui, sans-serif;
+  --font-body-md: Inter, system-ui, sans-serif;
+  --font-body-sm: Inter, system-ui, sans-serif;
+  --font-label-md: Inter, system-ui, sans-serif;
+  --font-label-sm: Inter, system-ui, sans-serif;
+}
