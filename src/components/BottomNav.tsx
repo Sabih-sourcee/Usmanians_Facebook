@@ -1,11 +1,13 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useKeyboardInset } from "../lib/useKeyboardInset";
 
 export const BottomNav: React.FC = () => {
   const location = useLocation();
   const currentPath = location.pathname;
   const { profile } = useAuth();
+  const keyboardOpen = useKeyboardInset() > 0;
 
   const navItems = [
     {
@@ -61,7 +63,10 @@ export const BottomNav: React.FC = () => {
   return (
     <nav
       aria-label="Main navigation"
-      className="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant/30"
+      aria-hidden={keyboardOpen || undefined}
+      className={`fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant/30 transition-transform duration-150 ${
+        keyboardOpen ? "translate-y-full pointer-events-none" : ""
+      }`}
     >
       <div className="h-16 flex items-center justify-around px-sm max-w-2xl mx-auto">
         {navItems.map((item) => {

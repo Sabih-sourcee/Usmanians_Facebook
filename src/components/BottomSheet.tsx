@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef } from "react";
+import { useKeyboardInset } from "../lib/useKeyboardInset";
 
 interface BottomSheetProps {
   open: boolean;
@@ -17,12 +18,21 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 }) => {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  const keyboardInset = useKeyboardInset(open);
 
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  // Keyed on `open` alone: callers pass inline arrows, and re-running this on
+  // every render would pull focus off the field the user is typing into.
   useEffect(() => {
     if (!open) return;
     closeRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     window.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
@@ -31,23 +41,42 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [open, onClose]);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || keyboardInset === 0) return;
+    const active = document.activeElement as HTMLElement | null;
+    if (!active || !panelRef.current?.contains(active)) return;
+    const id = window.setTimeout(() => {
+      active.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 120);
+    return () => window.clearTimeout(id);
+  }, [open, keyboardInset]);
 
   if (!open) return null;
 
   return (
     <div
       className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50"
+      style={{ paddingBottom: keyboardInset || undefined }}
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="bg-surface-container-lowest w-full max-w-lg sm:max-w-sm rounded-t-2xl sm:rounded-xl shadow-xl border border-outline-variant/20 max-h-[85dvh] flex flex-col pb-safe"
+        style={{
+          maxHeight: keyboardInset
+            ? `calc(100dvh - ${keyboardInset}px - 24px)`
+            : undefined,
+        }}
+        className={`bg-surface-container-lowest w-full max-w-lg sm:max-w-sm rounded-t-2xl sm:rounded-xl shadow-xl border border-outline-variant/20 max-h-[85dvh] flex flex-col ${
+          keyboardInset ? "" : "pb-safe"
+        }`}
       >
         <div className="flex items-center justify-between gap-sm px-md pt-md pb-sm border-b border-outline-variant/30 shrink-0">
           <h3 id={titleId} className="text-headline-md text-on-surface truncate">
