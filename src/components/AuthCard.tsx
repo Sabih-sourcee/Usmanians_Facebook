@@ -126,7 +126,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode }) => {
                 className="w-20 h-20 object-contain"
                 width={80}
                 height={80}
-                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVIUzDnIFUHGtQMvhfXn3_Wvt8RQ4LP6sY9fsXDrBirg&s=10"
+                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ5UOIusCDqOaoz6J_odmMt4q_OONHs6AIXN9sah_K8wA&s=10"
               />
             </div>
             <div className="space-y-xs w-full">

@@ -7,6 +7,9 @@ interface BottomSheetProps {
   onClose: () => void;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  panelClassName?: string;
+  contentClassName?: string;
+  footerClassName?: string;
 }
 
 export const BottomSheet: React.FC<BottomSheetProps> = ({
@@ -15,6 +18,9 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   onClose,
   children,
   footer,
+  panelClassName = "",
+  contentClassName = "",
+  footerClassName = "",
 }) => {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -30,7 +36,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   // every render would pull focus off the field the user is typing into.
   useEffect(() => {
     if (!open) return;
-    closeRef.current?.focus();
+    panelRef.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCloseRef.current();
     };
@@ -66,6 +72,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     >
       <div
         ref={panelRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -74,9 +81,9 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             ? `calc(100dvh - ${keyboardInset}px - 24px)`
             : undefined,
         }}
-        className={`bg-surface-container-lowest w-full max-w-lg sm:max-w-sm rounded-t-2xl sm:rounded-xl shadow-xl border border-outline-variant/20 max-h-[85dvh] flex flex-col ${
+        className={`bg-surface-container-lowest w-full max-w-lg rounded-t-2xl sm:rounded-xl shadow-xl border border-outline-variant/20 max-h-[85dvh] flex flex-col outline-none ${
           keyboardInset ? "" : "pb-safe"
-        }`}
+        } ${panelClassName}`}
       >
         <div className="flex items-center justify-between gap-sm px-md pt-md pb-sm border-b border-outline-variant/30 shrink-0">
           <h3 id={titleId} className="text-headline-md text-on-surface truncate">
@@ -94,8 +101,14 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             </svg>
           </button>
         </div>
-        <div className="overflow-y-auto flex-1 px-md py-md overscroll-contain">{children}</div>
-        {footer ? <div className="px-md pb-md pt-sm border-t border-outline-variant/30 shrink-0">{footer}</div> : null}
+        <div className={`overflow-y-auto flex-1 px-md py-md overscroll-contain ${contentClassName}`}>
+          {children}
+        </div>
+        {footer ? (
+          <div className={`px-md pb-md pt-sm border-t border-outline-variant/30 shrink-0 ${footerClassName}`}>
+            {footer}
+          </div>
+        ) : null}
       </div>
     </div>
   );
