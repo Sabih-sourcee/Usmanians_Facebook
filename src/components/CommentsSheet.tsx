@@ -2,16 +2,21 @@ import React, { useEffect, useState } from "react";
 import { BottomSheet } from "./BottomSheet";
 import { useAuth } from "../context/AuthContext";
 import { addComment, fetchComments } from "../lib/api/posts";
+import { addReportComment, fetchReportComments } from "../lib/api/civic";
 import type { CommentView } from "../types/models";
 
+export type CommentsTargetKind = "post" | "teacher-report";
+
 interface CommentsSheetProps {
-  postId: string | null;
+  targetId: string | null;
+  targetKind?: CommentsTargetKind;
   onClose: () => void;
   onCountChange?: (delta: number) => void;
 }
 
 export const CommentsSheet: React.FC<CommentsSheetProps> = ({
-  postId,
+  targetId,
+  targetKind = "post",
   onClose,
   onCountChange,
 }) => {
@@ -23,11 +28,16 @@ export const CommentsSheet: React.FC<CommentsSheetProps> = ({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!postId) return;
+    if (!targetId) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchComments(postId).then(({ data, error: err }) => {
+    setText("");
+    const load =
+      targetKind === "teacher-report"
+        ? fetchReportComments(targetId)
+        : fetchComments(targetId);
+    load.then(({ data, error: err }) => {
       if (cancelled) return;
       setLoading(false);
       if (err) setError(err);
@@ -36,29 +46,36 @@ export const CommentsSheet: React.FC<CommentsSheetProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [postId]);
+  }, [targetId, targetKind]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!postId || !user || !text.trim()) return;
+    if (!targetId || !user || !text.trim()) return;
     setSubmitting(true);
-    const { data, error: err } = await addComment({
-      postId,
-      authorId: user.id,
-      content: text,
-    });
+    const result =
+      targetKind === "teacher-report"
+        ? await addReportComment({
+            reportId: targetId,
+            authorId: user.id,
+            content: text,
+          })
+        : await addComment({
+            postId: targetId,
+            authorId: user.id,
+            content: text,
+          });
     setSubmitting(false);
-    if (err || !data) {
-      setError(err || "Could not comment");
+    if (result.error || !result.data) {
+      setError(result.error || "Could not comment");
       return;
     }
-    setComments((prev) => [...prev, data]);
+    setComments((prev) => [...prev, result.data!]);
     setText("");
     onCountChange?.(1);
   };
 
   return (
-    <BottomSheet open={Boolean(postId)} title="Comments" onClose={onClose}>
+    <BottomSheet open={Boolean(targetId)} title="Comments" onClose={onClose}>
       {loading ? (
         <div className="flex justify-center py-lg">
           <span className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" aria-label="Loading" />

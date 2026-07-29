@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { PinnedActionCard } from "../components/PinnedActionCard";
 import { PostCard } from "../components/PostCard";
+import { TeacherReportCard } from "../components/TeacherReportCard";
 import { PostComposer } from "../components/PostComposer";
 import { CommentsSheet } from "../components/CommentsSheet";
+import type { CommentsTargetKind } from "../components/CommentsSheet";
 import { BottomSheet } from "../components/BottomSheet";
 import { useAuth } from "../context/AuthContext";
 import { fetchFeed } from "../lib/api/posts";
@@ -14,15 +16,18 @@ import {
   submitTeacherReport,
 } from "../lib/api/civic";
 import { supabase } from "../lib/supabase";
-import type { PostView } from "../types/models";
+import type { FeedItem } from "../types/models";
 import type { PrincipalCandidateRow } from "../types/database";
 
 export const HomeFeedPage: React.FC = () => {
   const { user } = useAuth();
-  const [posts, setPosts] = useState<PostView[]>([]);
+  const [feed, setFeed] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [commentPostId, setCommentPostId] = useState<string | null>(null);
+  const [commentTarget, setCommentTarget] = useState<{
+    id: string;
+    kind: CommentsTargetKind;
+  } | null>(null);
   const [activeModal, setActiveModal] = useState<"vote" | "report" | null>(null);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
@@ -49,10 +54,10 @@ export const HomeFeedPage: React.FC = () => {
     setLoading(true);
     const { data, error: err } = await fetchFeed(user.id);
     setLoading(false);
-    if (err) setError(err);
+    if (err && data.length === 0) setError(err);
     else {
       setError(null);
-      setPosts(data);
+      setFeed(data);
     }
   }, [user]);
 
@@ -63,8 +68,11 @@ export const HomeFeedPage: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel("feed-posts")
+      .channel("home-feed")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, () => {
+        void loadFeed();
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "teacher_reports" }, () => {
         void loadFeed();
       })
       .subscribe();
@@ -109,7 +117,7 @@ export const HomeFeedPage: React.FC = () => {
     e.preventDefault();
     if (!user || !teacherName.trim() || !reportText.trim()) return;
     setReportBusy(true);
-    const { error: err } = await submitTeacherReport({
+    const { data, error: err } = await submitTeacherReport({
       reporterId: user.id,
       teacherName,
       className: reportClass,
@@ -118,15 +126,19 @@ export const HomeFeedPage: React.FC = () => {
       isAnonymous,
     });
     setReportBusy(false);
-    if (err) {
-      flash(err);
+    if (err || !data) {
+      flash(err || "Could not submit report");
       return;
     }
     setActiveModal(null);
     setTeacherName("");
     setReportClass("");
     setReportText("");
-    flash("Report received. Our ethics board will review within 24h.");
+    setFeed((prev) => [
+      { kind: "teacher-report", createdAt: data.createdAt, report: data },
+      ...prev.filter((item) => !(item.kind === "teacher-report" && item.report.id === data.id)),
+    ]);
+    flash("Report submitted and shared with the campus feed.");
   };
 
   return (
@@ -147,7 +159,10 @@ export const HomeFeedPage: React.FC = () => {
 
       <PostComposer
         onCreated={(post) => {
-          setPosts((prev) => [post, ...prev]);
+          setFeed((prev) => [
+            { kind: "post", createdAt: post.createdAt || new Date().toISOString(), post },
+            ...prev,
+          ]);
         }}
       />
 
@@ -162,26 +177,51 @@ export const HomeFeedPage: React.FC = () => {
             {error}
           </p>
         )}
-        {!loading && !error && posts.length === 0 && (
+        {!loading && !error && feed.length === 0 && (
           <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/20 p-lg text-center space-y-sm">
             <p className="text-headline-md text-on-surface">No posts yet</p>
             <p className="text-body-md text-on-surface-variant">Be the first to share an update with your campus.</p>
           </div>
         )}
-        {posts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            onCommentClick={() => setCommentPostId(post.id)}
-            onDeleted={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
-            onLikeChange={(id, liked, likes) =>
-              setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, liked, likes } : p)))
-            }
-          />
-        ))}
+        {feed.map((item) =>
+          item.kind === "post" ? (
+            <PostCard
+              key={`post-${item.post.id}`}
+              post={item.post}
+              onCommentClick={() => setCommentTarget({ id: item.post.id, kind: "post" })}
+              onDeleted={(id) =>
+                setFeed((prev) => prev.filter((f) => !(f.kind === "post" && f.post.id === id)))
+              }
+              onLikeChange={(id, liked, likes) =>
+                setFeed((prev) =>
+                  prev.map((f) =>
+                    f.kind === "post" && f.post.id === id
+                      ? { ...f, post: { ...f.post, liked, likes } }
+                      : f
+                  )
+                )
+              }
+            />
+          ) : (
+            <TeacherReportCard
+              key={`report-${item.report.id}`}
+              report={item.report}
+              onCommentClick={() => setCommentTarget({ id: item.report.id, kind: "teacher-report" })}
+              onLikeChange={(id, liked, likes) =>
+                setFeed((prev) =>
+                  prev.map((f) =>
+                    f.kind === "teacher-report" && f.report.id === id
+                      ? { ...f, report: { ...f.report, liked, likes } }
+                      : f
+                  )
+                )
+              }
+            />
+          )
+        )}
       </section>
 
-      {!loading && posts.length > 0 && (
+      {!loading && feed.length > 0 && (
         <div className="py-xl flex flex-col items-center gap-sm text-on-surface-variant">
           <div className="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center">
             <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
@@ -193,14 +233,31 @@ export const HomeFeedPage: React.FC = () => {
       )}
 
       <CommentsSheet
-        postId={commentPostId}
-        onClose={() => setCommentPostId(null)}
+        targetId={commentTarget?.id ?? null}
+        targetKind={commentTarget?.kind}
+        onClose={() => setCommentTarget(null)}
         onCountChange={(delta) => {
-          if (!commentPostId) return;
-          setPosts((prev) =>
-            prev.map((p) =>
-              p.id === commentPostId ? { ...p, comments: Math.max(0, p.comments + delta) } : p
-            )
+          if (!commentTarget) return;
+          setFeed((prev) =>
+            prev.map((f) => {
+              if (commentTarget.kind === "post" && f.kind === "post" && f.post.id === commentTarget.id) {
+                return {
+                  ...f,
+                  post: { ...f.post, comments: Math.max(0, f.post.comments + delta) },
+                };
+              }
+              if (
+                commentTarget.kind === "teacher-report" &&
+                f.kind === "teacher-report" &&
+                f.report.id === commentTarget.id
+              ) {
+                return {
+                  ...f,
+                  report: { ...f.report, comments: Math.max(0, f.report.comments + delta) },
+                };
+              }
+              return f;
+            })
           );
         }}
       />
@@ -256,7 +313,7 @@ export const HomeFeedPage: React.FC = () => {
 
       <BottomSheet open={activeModal === "report"} title="Report a Teacher" onClose={() => setActiveModal(null)}>
         <p className="text-body-sm text-on-surface-variant mb-md">
-          Reports are reviewed by school administrators. Use this for serious concerns only.
+          Reports are shared with the campus feed. Use this for serious concerns only.
         </p>
         <form onSubmit={handleReportSubmit} className="space-y-md">
           <div className="space-y-xs">

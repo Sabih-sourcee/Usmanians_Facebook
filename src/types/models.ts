@@ -38,17 +38,43 @@ export interface PostView {
   comments: number;
   liked?: boolean;
   imageUrl?: string | null;
+  createdAt?: string;
 }
+
+export interface TeacherReportView {
+  id: string;
+  teacherName: string;
+  className: string | null;
+  category: string | null;
+  description: string;
+  isAnonymous: boolean;
+  reporterId: string | null;
+  reporter: {
+    name: string;
+    avatar: string;
+    timestamp: string;
+  };
+  likes: number;
+  comments: number;
+  liked?: boolean;
+  createdAt: string;
+}
+
+export type FeedItem =
+  | { kind: "post"; createdAt: string; post: PostView }
+  | { kind: "teacher-report"; createdAt: string; report: TeacherReportView };
 
 export interface CommentView {
   id: string;
-  postId: string;
+  targetId: string;
   authorId: string;
   authorName: string;
   authorAvatar: string;
   content: string;
   createdAt: string;
   timestamp: string;
+  /** @deprecated use targetId */
+  postId?: string;
 }
 
 export interface NotificationView {

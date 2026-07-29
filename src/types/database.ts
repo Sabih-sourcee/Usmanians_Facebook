@@ -75,6 +75,20 @@ export interface TeacherReportRow {
   updated_at: string;
 }
 
+export interface TeacherReportLikeRow {
+  report_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface TeacherReportCommentRow {
+  id: string;
+  report_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+}
+
 export interface PrincipalCandidateRow {
   id: string;
   full_name: string;
@@ -149,6 +163,22 @@ export type Database = {
           category?: string | null;
         },
         Partial<TeacherReportRow>
+      >;
+      teacher_report_likes: TableDef<
+        TeacherReportLikeRow,
+        { report_id: string; user_id: string; created_at?: string },
+        Partial<TeacherReportLikeRow>
+      >;
+      teacher_report_comments: TableDef<
+        TeacherReportCommentRow,
+        {
+          report_id: string;
+          author_id: string;
+          content: string;
+          id?: string;
+          created_at?: string;
+        },
+        Partial<TeacherReportCommentRow>
       >;
       principal_candidates: TableDef<
         PrincipalCandidateRow,

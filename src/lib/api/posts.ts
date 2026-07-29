@@ -1,8 +1,9 @@
 import { supabase } from "../supabase";
 import type { PostRow, ProfileRow } from "../../types/database";
-import type { CommentView, PostView } from "../../types/models";
+import type { CommentView, FeedItem, PostView } from "../../types/models";
 import { DEFAULT_AVATAR } from "../../types/models";
 import { formatRelativeTime } from "../time";
+import { fetchTeacherReports } from "./civic";
 
 type PostWithAuthor = PostRow & {
   author: Pick<ProfileRow, "id" | "full_name" | "avatar_url"> | null;
@@ -44,6 +45,7 @@ function mapPost(
     likes,
     comments,
     liked,
+    createdAt: row.created_at,
   };
 }
 
@@ -75,16 +77,47 @@ async function enrichPosts(rows: PostWithAuthor[], userId: string | undefined): 
   );
 }
 
-export async function fetchFeed(userId?: string): Promise<{ data: PostView[]; error: string | null }> {
-  const { data, error } = await supabase
-    .from("posts")
-    .select("*, author:profiles!author_id(id, full_name, avatar_url)")
-    .order("created_at", { ascending: false })
-    .limit(50);
+export async function fetchFeed(userId?: string): Promise<{ data: FeedItem[]; error: string | null }> {
+  const [postsResult, reportsResult] = await Promise.all([
+    supabase
+      .from("posts")
+      .select("*, author:profiles!author_id(id, full_name, avatar_url)")
+      .order("created_at", { ascending: false })
+      .limit(50),
+    fetchTeacherReports(userId),
+  ]);
 
-  if (error) return { data: [], error: error.message };
-  const mapped = await enrichPosts((data || []) as PostWithAuthor[], userId);
-  return { data: mapped, error: null };
+  if (postsResult.error && reportsResult.error) {
+    return { data: [], error: postsResult.error.message };
+  }
+
+  const posts = postsResult.error
+    ? []
+    : await enrichPosts((postsResult.data || []) as PostWithAuthor[], userId);
+  const reports = reportsResult.data;
+
+  const items: FeedItem[] = [
+    ...posts.map((post) => ({
+      kind: "post" as const,
+      createdAt: post.createdAt || "",
+      post,
+    })),
+    ...reports.map((report) => ({
+      kind: "teacher-report" as const,
+      createdAt: report.createdAt,
+      report,
+    })),
+  ];
+
+  items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
+
+  const warning = postsResult.error
+    ? postsResult.error.message
+    : reportsResult.error
+      ? reportsResult.error
+      : null;
+
+  return { data: items.slice(0, 50), error: warning };
 }
 
 export async function fetchPostsByAuthor(
@@ -178,6 +211,7 @@ export async function fetchComments(
   return {
     data: ((data || []) as Row[]).map((row) => ({
       id: row.id,
+      targetId: row.post_id,
       postId: row.post_id,
       authorId: row.author_id,
       authorName: row.author?.full_name || "Usmanian",
@@ -219,6 +253,7 @@ export async function addComment(input: {
   return {
     data: {
       id: row.id,
+      targetId: row.post_id,
       postId: row.post_id,
       authorId: row.author_id,
       authorName: row.author?.full_name || "Usmanian",

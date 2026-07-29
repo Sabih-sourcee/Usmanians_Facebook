@@ -214,7 +214,7 @@ export const ProfilePage: React.FC = () => {
 
       <TabBar tabs={tabs} defaultTabId="posts" />
 
-      <CommentsSheet postId={commentPostId} onClose={() => setCommentPostId(null)} />
+      <CommentsSheet targetId={commentPostId} targetKind="post" onClose={() => setCommentPostId(null)} />
 
       <BottomSheet open={isEditing} title="Edit profile" onClose={() => setIsEditing(false)}>
         <form onSubmit={handleSave} className="space-y-md">

@@ -63,7 +63,7 @@ export const Header: React.FC<HeaderProps> = ({ pageTitle = "Home" }) => {
                 className="h-8 w-8 object-contain"
                 width={32}
                 height={32}
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1W6yJigLQBjyOCGJpWvJMCdNX4HFXea2TwN5MMNsSxJvEWOsniV4a9VMmL2JOoyVaNV5_xUoRM2cacU5RCqwfzDe_mO4dzVpFGUCVWfzvGch-bRnX_wQDysKT5-D4Makm8R_6mYVEtNQNCub_udd3qRdVFGUBXVvWzjWfZxDqhB4jFkX4_IZoioUCw-kPEfQD1H8jsvYedC9lTQFJphQKHS6tzcsE2D7rKVDcEVdpoYCGuHnEUKE"
+                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVIUzDnIFUHGtQMvhfXn3_Wvt8RQ4LP6sY9fsXDrBirg&s=10"
               />
             </span>
             <div className="min-w-0 flex flex-col">
