@@ -1,21 +1,5 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
-
-# Run and deploy your AI Studio app
-
-This contains everything you need to run your app locally.
-
-View your app in AI Studio: https://ai.studio/apps/ffd9e776-a431-463f-b282-9913abd67a47
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
-"# Usmanians_Facebook" 
+# Social Media For Usmanians
+- We made an social for only the students of usman public school
+- Only the students with an valid CID can make an Account on the platform
+- Privacy is 100% secured no one can access your profile
+- No one can add you as a freind until unless you want to
