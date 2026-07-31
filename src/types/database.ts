@@ -112,6 +112,16 @@ export interface PrincipalVoteResultRow {
   vote_count: number;
 }
 
+export interface PushSubscriptionRow {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh_key: string;
+  auth_key: string;
+  user_agent: string | null;
+  created_at: string;
+}
+
 type TableDef<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
   Row: Row;
   Insert: Insert;
@@ -189,6 +199,19 @@ export type Database = {
         PrincipalVoteRow,
         { voter_id: string; candidate_id: string; id?: string; created_at?: string },
         Partial<PrincipalVoteRow>
+      >;
+      push_subscriptions: TableDef<
+        PushSubscriptionRow,
+        {
+          user_id: string;
+          endpoint: string;
+          p256dh_key: string;
+          auth_key: string;
+          user_agent?: string | null;
+          id?: string;
+          created_at?: string;
+        },
+        Partial<PushSubscriptionRow>
       >;
     };
     Views: {

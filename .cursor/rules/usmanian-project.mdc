@@ -1,0 +1,23 @@
+---
+description: Usmanian project handbook — read cursor.md first; preserve product value
+alwaysApply: true
+---
+
+# Usmanian agent rule
+
+Before exploring the whole repo, read **`cursor.md`** at the project root. It is the handbook for product purpose, architecture, routes, DB, brand, and safe change patterns.
+
+Also skim **`usmanian.md`** for brand tokens when touching UI.
+
+## Preserve
+
+- CID + admin approval gate; verified-only social access (RLS)
+- Friend consent; anonymous teacher-report privacy
+- Brand tokens / Inter / UPSS shield — no AI-purple or mock-data regressions
+- Mobile AppShell (Header, BottomNav, bottom sheets, safe areas)
+
+## Edit style
+
+- Data through `src/lib/api/*`; types in `types/database.ts` + `types/models.ts`
+- New schema = new migration + RLS; update `cursor.md` when structure changes
+- Prefer extending existing feed/card/shell patterns over new visual systems

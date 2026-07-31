@@ -4,7 +4,10 @@ import {
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  subscribeToNotifications,
+  viewFromNotificationRow,
 } from "../lib/api/notifications";
+import { supabase } from "../lib/supabase";
 import type { NotificationView } from "../types/models";
 
 export const ActivityPage: React.FC = () => {
@@ -30,6 +33,28 @@ export const ActivityPage: React.FC = () => {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = subscribeToNotifications(
+      user.id,
+      (row) => {
+        void viewFromNotificationRow(row).then((view) => {
+          setItems((prev) => {
+            if (prev.some((n) => n.id === view.id)) return prev;
+            return [view, ...prev];
+          });
+          if (!view.read) setUnread((n) => n + 1);
+        });
+      },
+      "activity"
+    );
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   if (!user) return null;
 

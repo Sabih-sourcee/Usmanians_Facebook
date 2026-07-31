@@ -1,8 +1,8 @@
-# Usmanian — Project Context
+# Usmanian — Brand & Stack Cheat-Sheet
 
 Private network for **Usman Public School System** students & alumni. React 19 + Vite 6 + React Router 7 + Tailwind CSS v4 + Supabase (Auth, Postgres, Storage, Realtime). Dev: `npm run dev` → http://localhost:3000.
 
-**AI agents: read this file first.** Brand source: `Usmanian_Brand_Guidelines.docx` (v1.0 / 2026).
+**AI agents: read `cursor.md` first** (full handbook: product value, architecture, safe changes). This file is the compact brand/stack reminder. Brand source: `Usmanian_Brand_Guidelines.docx` (v1.0 / 2026).
 
 ---
 

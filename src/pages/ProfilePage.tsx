@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { fetchPostsByAuthor } from "../lib/api/posts";
 import { updateProfile } from "../lib/api/profiles";
 import { uploadUserFile } from "../lib/api/storage";
+import { PushNotificationToggle } from "../components/PushNotificationToggle";
 import type { PostView } from "../types/models";
 
 export const ProfilePage: React.FC = () => {
@@ -203,6 +204,8 @@ export const ProfilePage: React.FC = () => {
       )}
 
       <ProfileHeader user={user} onEditProfile={openEdit} />
+
+      <PushNotificationToggle userId={user.id} />
 
       <button
         type="button"

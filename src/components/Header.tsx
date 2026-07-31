@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { fetchUnreadCount } from "../lib/api/notifications";
+import {
+  fetchUnreadCount,
+  subscribeToNotifications,
+} from "../lib/api/notifications";
 import { searchProfiles } from "../lib/api/profiles";
 import { sendFriendRequest } from "../lib/api/friendships";
 import { BottomSheet } from "./BottomSheet";
+import { supabase } from "../lib/supabase";
 import type { ProfileRow } from "../types/database";
 import { DEFAULT_AVATAR } from "../types/models";
 
@@ -25,10 +29,20 @@ export const Header: React.FC<HeaderProps> = ({ pageTitle = "Home" }) => {
   useEffect(() => {
     if (!user) return;
     void fetchUnreadCount(user.id).then(setUnread);
-    const id = window.setInterval(() => {
-      void fetchUnreadCount(user.id).then(setUnread);
-    }, 30000);
-    return () => window.clearInterval(id);
+
+    const channel = subscribeToNotifications(
+      user.id,
+      (row) => {
+        if (!row.is_read) {
+          setUnread((n) => n + 1);
+        }
+      },
+      "bell"
+    );
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, [user]);
 
   useEffect(() => {
@@ -63,7 +77,7 @@ export const Header: React.FC<HeaderProps> = ({ pageTitle = "Home" }) => {
                 className="h-8 w-8 object-contain"
                 width={32}
                 height={32}
-                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ5UOIusCDqOaoz6J_odmMt4q_OONHs6AIXN9sah_K8wA&s=10"
+                src="/icons/icon-192.png"
               />
             </span>
             <div className="min-w-0 flex flex-col">
