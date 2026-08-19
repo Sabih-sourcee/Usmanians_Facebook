@@ -10,8 +10,6 @@ import {
   type PushPermissionState,
 } from "../lib/push";
 
-const SESSION_DISMISS_KEY = "usmanian_notif_prompt_dismissed";
-
 export const NotificationPrompt: React.FC = () => {
   const { user } = useAuth();
   const [state, setState] = useState<PushPermissionState | null>(null);
@@ -23,15 +21,7 @@ export const NotificationPrompt: React.FC = () => {
     if (!user) return;
     const next = await getPushPermissionState(user.id);
     setState(next);
-    if (next === "subscribed" || next === "unsupported") {
-      setOpen(false);
-      return;
-    }
-    if (sessionStorage.getItem(SESSION_DISMISS_KEY) === "1") {
-      setOpen(false);
-      return;
-    }
-    setOpen(true);
+    setOpen(next !== "subscribed" && next !== "unsupported");
   }, [user]);
 
   useEffect(() => {
@@ -48,12 +38,10 @@ export const NotificationPrompt: React.FC = () => {
       setError(enableError);
       return;
     }
-    sessionStorage.removeItem(SESSION_DISMISS_KEY);
     await refresh();
   };
 
   const onDismiss = () => {
-    sessionStorage.setItem(SESSION_DISMISS_KEY, "1");
     setOpen(false);
   };
 
