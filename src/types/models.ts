@@ -11,6 +11,8 @@ export interface UserProfile {
     followers: number;
     notes: number;
   };
+  pointsBalance?: number;
+  referralCode?: string | null;
 }
 
 export interface PostAttachment {
@@ -39,8 +41,18 @@ export interface PostView {
   liked?: boolean;
   imageUrl?: string | null;
   createdAt?: string;
+  subject?: string | null;
+  gradeLevel?: string | null;
+  topicTag?: string | null;
+  noteCampus?: string | null;
+  attestationAccepted?: boolean;
+  userVote?: -1 | 0 | 1;
+  score?: number;
 }
 
+export type FeedItem = { kind: "post"; createdAt: string; post: PostView };
+
+/** @deprecated Teacher reports are archived and hidden from all UI surfaces */
 export interface TeacherReportView {
   id: string;
   teacherName: string;
@@ -49,20 +61,12 @@ export interface TeacherReportView {
   description: string;
   isAnonymous: boolean;
   reporterId: string | null;
-  reporter: {
-    name: string;
-    avatar: string;
-    timestamp: string;
-  };
+  reporter: { name: string; avatar: string; timestamp: string };
   likes: number;
   comments: number;
   liked?: boolean;
   createdAt: string;
 }
-
-export type FeedItem =
-  | { kind: "post"; createdAt: string; post: PostView }
-  | { kind: "teacher-report"; createdAt: string; report: TeacherReportView };
 
 export interface CommentView {
   id: string;
@@ -73,7 +77,6 @@ export interface CommentView {
   content: string;
   createdAt: string;
   timestamp: string;
-  /** @deprecated use targetId */
   postId?: string;
 }
 
@@ -86,6 +89,62 @@ export interface NotificationView {
   read: boolean;
   actorId: string | null;
   referenceId: string | null;
+}
+
+export interface BannerView {
+  id: string;
+  text: string;
+  linkText: string | null;
+  linkUrl: string | null;
+  isActive: boolean;
+}
+
+export interface ShopItemView {
+  id: string;
+  name: string;
+  category: "gamer_tech" | "educational";
+  pointCost: number;
+  stockCount: number;
+  isFunded: boolean;
+  description: string | null;
+}
+
+export interface RedemptionRequestView {
+  id: string;
+  userId: string;
+  userName: string;
+  shopItemId: string;
+  shopItemName: string;
+  status: "pending" | "approved" | "fulfilled" | "rejected";
+  createdAt: string;
+}
+
+export interface ReferralLeaderboardEntry {
+  rank: number;
+  userId: string;
+  userName: string;
+  referralCount: number;
+}
+
+export interface ReferralPrizeView {
+  id: string;
+  rankMin: number;
+  rankMax: number;
+  title: string;
+  description: string | null;
+  isFunded: boolean;
+}
+
+export interface ExplainerVideoView {
+  id: string;
+  userId: string;
+  userName: string;
+  title: string;
+  description: string | null;
+  videoUrl: string | null;
+  status: "pending" | "approved" | "rejected";
+  pointsAwarded: number;
+  createdAt: string;
 }
 
 export const DEFAULT_AVATAR =

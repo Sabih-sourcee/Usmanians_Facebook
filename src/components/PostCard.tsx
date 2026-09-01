@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { PostView } from "../types/models";
 import { useAuth } from "../context/AuthContext";
-import { deletePost, toggleLike } from "../lib/api/posts";
+import { deletePost, toggleLike, toggleNoteVote } from "../lib/api/posts";
 import { shareText } from "../lib/share";
 import {
   FeedCard,
@@ -16,6 +16,8 @@ interface PostCardProps {
   onCommentClick?: () => void;
   onDeleted?: (postId: string) => void;
   onLikeChange?: (postId: string, liked: boolean, likes: number) => void;
+  showNoteVotes?: boolean;
+  onVoteChange?: () => void;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -23,10 +25,14 @@ export const PostCard: React.FC<PostCardProps> = ({
   onCommentClick,
   onDeleted,
   onLikeChange,
+  showNoteVotes = false,
+  onVoteChange,
 }) => {
   const { user } = useAuth();
   const [liked, setLiked] = useState(Boolean(post.liked));
   const [likeCount, setLikeCount] = useState(post.likes);
+  const [score, setScore] = useState(post.score ?? post.likes);
+  const [userVote, setUserVote] = useState<-1 | 0 | 1>(post.userVote ?? 0);
   const [commentCount, setCommentCount] = useState(post.comments);
   const [showOptions, setShowOptions] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -36,8 +42,10 @@ export const PostCard: React.FC<PostCardProps> = ({
   useEffect(() => {
     setLiked(Boolean(post.liked));
     setLikeCount(post.likes);
+    setScore(post.score ?? post.likes);
+    setUserVote(post.userVote ?? 0);
     setCommentCount(post.comments);
-  }, [post.id, post.liked, post.likes, post.comments]);
+  }, [post.id, post.liked, post.likes, post.comments, post.score, post.userVote]);
 
   useEffect(() => {
     if (!showOptions) return;
@@ -73,6 +81,26 @@ export const PostCard: React.FC<PostCardProps> = ({
       return;
     }
     onLikeChange?.(post.id, nextLiked, nextCount);
+  };
+
+  const handleVote = async (vote: -1 | 1) => {
+    if (!user || busy) return;
+    const prevVote = userVote;
+    const prevScore = score;
+    const nextVote = prevVote === vote ? 0 : vote;
+    const nextScore = prevScore - prevVote + nextVote;
+    setUserVote(nextVote);
+    setScore(nextScore);
+    setBusy(true);
+    const { error } = await toggleNoteVote(post.id, user.id, vote);
+    setBusy(false);
+    if (error) {
+      setUserVote(prevVote);
+      setScore(prevScore);
+      flashToast(error);
+      return;
+    }
+    onVoteChange?.();
   };
 
   const handleShare = async () => {
@@ -211,23 +239,35 @@ export const PostCard: React.FC<PostCardProps> = ({
       )}
 
       <FeedCardActions>
-        <button type="button" aria-pressed={liked} aria-label={`${likeCount} likes`} onClick={handleLike} className={feedActionBtnClass}>
-          <svg
-            className={`w-5 h-5 ${liked ? "text-error fill-current" : ""}`}
-            fill={liked ? "currentColor" : "none"}
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span className="text-label-md">{likeCount}</span>
-        </button>
+        {showNoteVotes ? (
+          <>
+            <button type="button" aria-pressed={userVote === 1} onClick={() => void handleVote(1)} className={feedActionBtnClass}>
+              <span className="text-label-md">▲</span>
+              <span className="text-label-md">{score}</span>
+            </button>
+            <button type="button" aria-pressed={userVote === -1} onClick={() => void handleVote(-1)} className={feedActionBtnClass}>
+              <span className="text-label-md">▼</span>
+            </button>
+          </>
+        ) : (
+          <button type="button" aria-pressed={liked} aria-label={`${likeCount} likes`} onClick={handleLike} className={feedActionBtnClass}>
+            <svg
+              className={`w-5 h-5 ${liked ? "text-error fill-current" : ""}`}
+              fill={liked ? "currentColor" : "none"}
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className="text-label-md">{likeCount}</span>
+          </button>
+        )}
         <button
           type="button"
           aria-label={`${commentCount} comments`}

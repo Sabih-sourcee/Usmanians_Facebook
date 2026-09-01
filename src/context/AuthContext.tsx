@@ -11,6 +11,8 @@ import { supabase } from "../lib/supabase";
 import type { ProfileRow } from "../types/database";
 import type { UserProfile } from "../types/models";
 import { profileToUser, loadProfileStats } from "../lib/api/profiles";
+import { PointsService } from "../lib/api/points";
+import { recordReferral } from "../lib/api/referrals";
 
 export type AuthStatus = "loading" | "loggedOut" | "pendingApproval" | "loggedIn";
 
@@ -21,6 +23,7 @@ export interface SignupData {
   campus: string;
   email: string;
   password: string;
+  referralCode?: string;
 }
 
 export interface AuthContextType {
@@ -86,6 +89,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     setAuthStatus(statusFromProfile(nextProfile, true));
+
+    if (nextProfile?.verification_status === "approved") {
+      void PointsService.claimDailyLogin();
+    }
+
     return nextProfile;
   }, []);
 
@@ -183,6 +191,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       if (data.user) {
+        if (signupData.referralCode) {
+          await recordReferral(signupData.referralCode, data.user.id);
+        }
         await loadProfile(data.user);
       } else {
         setAuthStatus("pendingApproval");
