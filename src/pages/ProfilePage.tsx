@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { ProfileHeader } from "../components/ProfileHeader";
 import { TabBar, TabItem } from "../components/TabBar";
 import { PostCard } from "../components/PostCard";
@@ -9,6 +10,7 @@ import { fetchPostsByAuthor } from "../lib/api/posts";
 import { updateProfile } from "../lib/api/profiles";
 import { uploadUserFile } from "../lib/api/storage";
 import { PushNotificationToggle } from "../components/PushNotificationToggle";
+import { PointsService } from "../lib/api/points";
 import type { PostView } from "../types/models";
 
 export const ProfilePage: React.FC = () => {
@@ -26,6 +28,7 @@ export const ProfilePage: React.FC = () => {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [pointsBalance, setPointsBalance] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -43,6 +46,11 @@ export const ProfilePage: React.FC = () => {
     return () => {
       cancelled = true;
     };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    void PointsService.getBalance(user.id).then(({ balance }) => setPointsBalance(balance));
   }, [user]);
 
   if (!user || !profile) {
@@ -145,6 +153,7 @@ export const ProfilePage: React.FC = () => {
             <PostCard
               key={note.id}
               post={note}
+              showNoteVotes
               onCommentClick={() => setCommentPostId(note.id)}
               onDeleted={(id) => setNotes((prev) => prev.filter((p) => p.id !== id))}
             />
@@ -205,6 +214,18 @@ export const ProfilePage: React.FC = () => {
 
       <ProfileHeader user={user} onEditProfile={openEdit} />
 
+      <div className="bg-secondary-fixed rounded-xl p-md flex items-center justify-between">
+        <div>
+          <p className="text-label-md text-on-secondary-fixed font-semibold">Usmanian points</p>
+          <p className="text-headline-md font-bold text-primary">{pointsBalance} pts</p>
+        </div>
+        <div className="flex flex-col gap-xs text-right">
+          <Link to="/rewards" className="text-label-md font-semibold text-primary">Rewards shop</Link>
+          <Link to="/referrals" className="text-label-md font-semibold text-primary">Referrals</Link>
+          <Link to="/notes" className="text-label-md font-semibold text-primary">Browse notes</Link>
+        </div>
+      </div>
+
       <PushNotificationToggle userId={user.id} />
 
       <button
@@ -217,7 +238,7 @@ export const ProfilePage: React.FC = () => {
 
       <TabBar tabs={tabs} defaultTabId="posts" />
 
-      <CommentsSheet targetId={commentPostId} targetKind="post" onClose={() => setCommentPostId(null)} />
+      <CommentsSheet targetId={commentPostId} onClose={() => setCommentPostId(null)} />
 
       <BottomSheet open={isEditing} title="Edit profile" onClose={() => setIsEditing(false)}>
         <form onSubmit={handleSave} className="space-y-md">

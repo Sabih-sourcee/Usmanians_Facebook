@@ -87,6 +87,7 @@ export async function fetchTeacherReports(userId?: string): Promise<{
   const { data, error } = await supabase
     .from("teacher_reports")
     .select("*, reporter:profiles!reporter_id(id, full_name, avatar_url)")
+    .eq("status", "open")
     .order("created_at", { ascending: false })
     .limit(50);
 

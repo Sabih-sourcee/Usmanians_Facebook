@@ -80,6 +80,10 @@ docs/superpowers/       → Feature specs & plans (e.g. teacher-reports feed)
 | `/`, `/feed` | Protected + AppShell | Composer, mixed feed, vote & report modals |
 | `/friends` | Protected | Search, requests (`/groups` redirects here) |
 | `/activity` | Protected | Notifications |
+| `/notes` | Protected | Study notes library |
+| `/rewards` | Protected | Points shop |
+| `/referrals` | Protected | Referral program |
+| `/donate` | Protected | Easypaisa donation details (header “Donate us” link) |
 | `/profile` | Protected | Edit profile, own posts, logout |
 | `/admin` | Protected (admin role in UI) | Approve/reject pending profiles |
 | `*` | → `/` | |
@@ -101,6 +105,7 @@ Promote admin in SQL:
 | Likes / comments | `posts.ts` + `civic.ts` (report engagement), `CommentsSheet` |
 | Friends | `FriendsPage`, `lib/api/friendships`, `lib/api/profiles.searchProfiles` |
 | Activity | `ActivityPage`, `lib/api/notifications` |
+| Donate | `DonatePage` — Easypaisa details; header link on every AppShell page |
 | Profile | `ProfilePage`, `ProfileHeader`, `lib/api/profiles` |
 | Admin approvals | `AdminApprovalsPage`, `setVerificationStatus` |
 | Vote for Principal | `PinnedActionCard` + vote modal in `HomeFeedPage`, `lib/api/civic` |

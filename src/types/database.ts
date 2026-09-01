@@ -2,6 +2,10 @@ export type VerificationStatus = "pending" | "approved" | "rejected";
 export type UserRole = "student" | "teacher" | "admin";
 export type PostType = "standard" | "shared_notes";
 export type FriendshipStatus = "pending" | "accepted" | "blocked";
+export type TeacherReportStatus = "open" | "archived";
+export type ShopCategory = "gamer_tech" | "educational";
+export type RedemptionStatus = "pending" | "approved" | "fulfilled" | "rejected";
+export type ExplainerVideoStatus = "pending" | "approved" | "rejected";
 
 export interface ProfileRow {
   id: string;
@@ -14,6 +18,7 @@ export interface ProfileRow {
   role: UserRole | string;
   verification_status: VerificationStatus | string;
   bio: string | null;
+  referral_code: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -27,6 +32,10 @@ export interface PostRow {
   attachment_url: string | null;
   attachment_name: string | null;
   subject: string | null;
+  grade_level: string | null;
+  topic_tag: string | null;
+  note_campus: string | null;
+  attestation_accepted: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -119,6 +128,88 @@ export interface PushSubscriptionRow {
   p256dh_key: string;
   auth_key: string;
   user_agent: string | null;
+  created_at: string;
+}
+
+export interface UserPointsRow {
+  user_id: string;
+  balance: number;
+  updated_at: string;
+}
+
+export interface PointTransactionRow {
+  id: string;
+  user_id: string;
+  amount: number;
+  reason: string;
+  reference_id: string | null;
+  created_at: string;
+}
+
+export interface ShopItemRow {
+  id: string;
+  name: string;
+  category: ShopCategory | string;
+  point_cost: number;
+  stock_count: number;
+  is_funded: boolean;
+  description: string | null;
+  created_at: string;
+}
+
+export interface RedemptionRequestRow {
+  id: string;
+  user_id: string;
+  shop_item_id: string;
+  status: RedemptionStatus | string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReferralRow {
+  id: string;
+  referrer_id: string;
+  referred_id: string;
+  created_at: string;
+}
+
+export interface ReferralPrizeRow {
+  id: string;
+  rank_min: number;
+  rank_max: number;
+  title: string;
+  description: string | null;
+  is_funded: boolean;
+  created_at: string;
+}
+
+export interface BannerRow {
+  id: string;
+  text: string;
+  link_text: string | null;
+  link_url: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExplainerVideoRow {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  video_url: string | null;
+  status: ExplainerVideoStatus | string;
+  points_awarded: number;
+  reviewed_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PostVoteRow {
+  post_id: string;
+  user_id: string;
+  vote: number;
   created_at: string;
 }
 

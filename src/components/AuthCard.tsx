@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { normalizeAuthError } from "../lib/authErrors";
 
 interface AuthCardProps {
   initialMode?: "login" | "signup" | "pending";
+  referralCode?: string;
 }
 
 const inputClass =
   "w-full h-12 px-md rounded-lg bg-surface-container-low border border-outline-variant/40 text-body-md text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors duration-200";
 
-export const AuthCard: React.FC<AuthCardProps> = ({ initialMode }) => {
+export const AuthCard: React.FC<AuthCardProps> = ({ initialMode, referralCode }) => {
   const { authStatus, login, signup, logout, refreshProfile, authError, clearAuthError } =
     useAuth();
   const navigate = useNavigate();
@@ -48,7 +50,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode }) => {
         ? "loggedIn"
         : internalMode;
 
-  const displayError = formError || authError;
+  const displayError = normalizeAuthError(formError || authError);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +83,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode }) => {
       cid: signupCid.trim(),
       className: signupClass.trim(),
       campus: signupCampus,
+      referralCode: referralCode?.trim() || undefined,
     });
     setIsLoading(false);
 

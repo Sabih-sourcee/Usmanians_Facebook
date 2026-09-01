@@ -1,4 +1,5 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { createPost } from "../lib/api/posts";
 import { uploadUserFile } from "../lib/api/storage";
@@ -9,9 +10,13 @@ interface PostComposerProps {
 }
 
 export const PostComposer: React.FC<PostComposerProps> = ({ onCreated }) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [content, setContent] = useState("");
   const [subject, setSubject] = useState("");
+  const [gradeLevel, setGradeLevel] = useState("");
+  const [topicTag, setTopicTag] = useState("");
+  const [noteCampus, setNoteCampus] = useState(profile?.campus || "");
+  const [attestation, setAttestation] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [attachFile, setAttachFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -19,7 +24,13 @@ export const PostComposer: React.FC<PostComposerProps> = ({ onCreated }) => {
   const imageRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (profile?.campus && !noteCampus) setNoteCampus(profile.campus);
+  }, [profile?.campus, noteCampus]);
+
   if (!user) return null;
+
+  const isNote = Boolean(attachFile);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,13 +38,23 @@ export const PostComposer: React.FC<PostComposerProps> = ({ onCreated }) => {
       setError("Write something or add a photo/file.");
       return;
     }
+    if (isNote) {
+      if (!subject.trim() || !gradeLevel.trim() || !topicTag.trim()) {
+        setError("Notes require subject, grade/level, and topic tag.");
+        return;
+      }
+      if (!attestation) {
+        setError("You must confirm this is your original work.");
+        return;
+      }
+    }
+
     setBusy(true);
     setError(null);
 
     let imageUrl: string | null = null;
     let attachmentUrl: string | null = null;
     let attachmentName: string | null = null;
-    const type = attachFile ? "shared_notes" : "standard";
 
     if (imageFile) {
       const up = await uploadUserFile("post-images", user.id, imageFile);
@@ -59,11 +80,15 @@ export const PostComposer: React.FC<PostComposerProps> = ({ onCreated }) => {
     const { data, error: createError } = await createPost({
       authorId: user.id,
       content: content.trim() || (attachFile ? `Shared ${attachFile.name}` : "Shared a photo"),
-      type,
+      type: isNote ? "shared_notes" : "standard",
       imageUrl,
       attachmentUrl,
       attachmentName,
       subject: subject.trim() || null,
+      gradeLevel: gradeLevel.trim() || null,
+      topicTag: topicTag.trim() || null,
+      noteCampus: noteCampus.trim() || null,
+      attestationAccepted: isNote ? attestation : false,
     });
 
     setBusy(false);
@@ -74,6 +99,9 @@ export const PostComposer: React.FC<PostComposerProps> = ({ onCreated }) => {
 
     setContent("");
     setSubject("");
+    setGradeLevel("");
+    setTopicTag("");
+    setAttestation(false);
     setImageFile(null);
     setAttachFile(null);
     if (imageRef.current) imageRef.current.value = "";
@@ -105,13 +133,50 @@ export const PostComposer: React.FC<PostComposerProps> = ({ onCreated }) => {
       )}
 
       {attachFile && (
-        <input
-          type="text"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          placeholder="Subject (optional)"
-          className="w-full h-11 px-sm rounded-lg bg-surface-container-low border border-outline-variant/40 text-body-md"
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm">
+          <input
+            type="text"
+            required
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="Subject *"
+            className="w-full h-11 px-sm rounded-lg bg-surface-container-low border border-outline-variant/40 text-body-md"
+          />
+          <input
+            type="text"
+            required
+            value={gradeLevel}
+            onChange={(e) => setGradeLevel(e.target.value)}
+            placeholder="Grade / level *"
+            className="w-full h-11 px-sm rounded-lg bg-surface-container-low border border-outline-variant/40 text-body-md"
+          />
+          <input
+            type="text"
+            required
+            value={topicTag}
+            onChange={(e) => setTopicTag(e.target.value)}
+            placeholder="Topic tag *"
+            className="w-full h-11 px-sm rounded-lg bg-surface-container-low border border-outline-variant/40 text-body-md"
+          />
+          <input
+            type="text"
+            value={noteCampus}
+            onChange={(e) => setNoteCampus(e.target.value)}
+            placeholder="Campus"
+            className="w-full h-11 px-sm rounded-lg bg-surface-container-low border border-outline-variant/40 text-body-md"
+          />
+          <label className="sm:col-span-2 flex items-start gap-sm min-h-[44px] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={attestation}
+              onChange={(e) => setAttestation(e.target.checked)}
+              className="accent-primary w-4 h-4 mt-1"
+            />
+            <span className="text-body-sm text-on-surface">
+              This is my own original work, not a photocopy or scan of a published textbook.
+            </span>
+          </label>
+        </div>
       )}
 
       {error && (
@@ -122,34 +187,17 @@ export const PostComposer: React.FC<PostComposerProps> = ({ onCreated }) => {
 
       <div className="flex items-center justify-between gap-sm flex-wrap">
         <div className="flex items-center gap-0.5">
-          <input
-            ref={imageRef}
-            type="file"
-            accept="image/*"
-            className="sr-only"
-            id="composer-image"
-            onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-          />
-          <label
-            htmlFor="composer-image"
-            className="min-h-[44px] min-w-[44px] px-sm inline-flex items-center justify-center text-on-surface-variant hover:text-primary rounded-lg cursor-pointer"
-          >
+          <input ref={imageRef} type="file" accept="image/*" className="sr-only" id="composer-image" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
+          <label htmlFor="composer-image" className="min-h-[44px] min-w-[44px] px-sm inline-flex items-center justify-center text-on-surface-variant hover:text-primary rounded-lg cursor-pointer">
             Photo
           </label>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".pdf,.doc,.docx,.ppt,.pptx,.txt"
-            className="sr-only"
-            id="composer-file"
-            onChange={(e) => setAttachFile(e.target.files?.[0] || null)}
-          />
-          <label
-            htmlFor="composer-file"
-            className="min-h-[44px] min-w-[44px] px-sm inline-flex items-center justify-center text-on-surface-variant hover:text-primary rounded-lg cursor-pointer"
-          >
+          <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt" className="sr-only" id="composer-file" onChange={(e) => setAttachFile(e.target.files?.[0] || null)} />
+          <label htmlFor="composer-file" className="min-h-[44px] min-w-[44px] px-sm inline-flex items-center justify-center text-on-surface-variant hover:text-primary rounded-lg cursor-pointer">
             Notes
           </label>
+          <Link to="/notes" className="min-h-[44px] px-sm inline-flex items-center text-secondary text-label-md font-semibold">
+            Browse notes
+          </Link>
         </div>
         <button
           type="submit"
