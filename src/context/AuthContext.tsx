@@ -13,6 +13,8 @@ import type { UserProfile } from "../types/models";
 import { profileToUser, loadProfileStats } from "../lib/api/profiles";
 import { PointsService } from "../lib/api/points";
 import { recordReferral } from "../lib/api/referrals";
+import { isStudentCidAvailable } from "../lib/api/auth";
+import { DUPLICATE_CID_MESSAGE, normalizeAuthError } from "../lib/authErrors";
 
 export type AuthStatus = "loading" | "loggedOut" | "pendingApproval" | "loggedIn";
 
@@ -154,7 +156,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
 
       if (error) {
-        const message = error.message || "Unable to log in";
+        const message = normalizeAuthError(error);
         setAuthError(message);
         return { error: message };
       }
@@ -171,6 +173,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const signup = useCallback(
     async (signupData: SignupData) => {
       setAuthError(null);
+
+      const cidAvailable = await isStudentCidAvailable(signupData.cid);
+      if (cidAvailable === false) {
+        setAuthError(DUPLICATE_CID_MESSAGE);
+        return { error: DUPLICATE_CID_MESSAGE };
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email: signupData.email.trim(),
         password: signupData.password,
@@ -185,7 +194,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
 
       if (error) {
-        const message = error.message || "Unable to sign up";
+        const message = normalizeAuthError(error);
         setAuthError(message);
         return { error: message };
       }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { normalizeAuthError } from "../lib/authErrors";
 
 interface AuthCardProps {
   initialMode?: "login" | "signup" | "pending";
@@ -49,7 +50,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode, referralCode })
         ? "loggedIn"
         : internalMode;
 
-  const displayError = formError || authError;
+  const displayError = normalizeAuthError(formError || authError);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
