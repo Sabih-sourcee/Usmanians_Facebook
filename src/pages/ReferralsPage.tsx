@@ -2,16 +2,18 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
   ensureReferralCode,
+  fetchMyReferrals,
   fetchReferralCount,
   fetchReferralLeaderboard,
   fetchReferralPrizes,
 } from "../lib/api/referrals";
-import type { ReferralLeaderboardEntry, ReferralPrizeView } from "../types/models";
+import type { ReferralLeaderboardEntry, ReferralPrizeView, ReferralSignupView } from "../types/models";
 
 export const ReferralsPage: React.FC = () => {
   const { user } = useAuth();
   const [code, setCode] = useState<string | null>(null);
   const [count, setCount] = useState(0);
+  const [myReferrals, setMyReferrals] = useState<ReferralSignupView[]>([]);
   const [leaderboard, setLeaderboard] = useState<ReferralLeaderboardEntry[]>([]);
   const [prizes, setPrizes] = useState<ReferralPrizeView[]>([]);
   const [copied, setCopied] = useState(false);
@@ -20,6 +22,7 @@ export const ReferralsPage: React.FC = () => {
     if (!user) return;
     void ensureReferralCode(user.id).then(({ code: c }) => setCode(c));
     void fetchReferralCount(user.id).then(setCount);
+    void fetchMyReferrals(user.id).then(({ data }) => setMyReferrals(data));
     void fetchReferralLeaderboard().then(({ data }) => setLeaderboard(data));
     void fetchReferralPrizes().then(({ data }) => setPrizes(data));
   }, [user]);
@@ -53,6 +56,40 @@ export const ReferralsPage: React.FC = () => {
         </button>
         <p className="text-label-sm text-on-surface-variant text-center">Your referrals: {count}</p>
       </div>
+
+      <section className="space-y-sm">
+        <h3 className="text-headline-md text-on-surface">People you referred</h3>
+        {myReferrals.length === 0 ? (
+          <p className="text-body-sm text-on-surface-variant">
+            No one has signed up with your link yet. Share your code above to get started.
+          </p>
+        ) : (
+          <ul className="list-none p-0 m-0 space-y-xs">
+            {myReferrals.map((signup) => (
+              <li
+                key={signup.id}
+                className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-md py-sm"
+              >
+                <div className="flex items-start justify-between gap-sm">
+                  <div className="min-w-0">
+                    <p className="text-body-md font-semibold text-on-surface truncate">{signup.name}</p>
+                    <p className="text-label-sm text-on-surface-variant truncate">
+                      {[signup.className, signup.campus].filter(Boolean).join(" · ") || "New Usmanian"}
+                    </p>
+                  </div>
+                  <span className="text-label-sm text-on-surface-variant shrink-0">{signup.signedUpAt}</span>
+                </div>
+                {signup.verificationStatus === "pending" && (
+                  <p className="text-label-sm text-secondary mt-xs">Pending admin approval</p>
+                )}
+                {signup.verificationStatus === "approved" && (
+                  <p className="text-label-sm text-primary mt-xs">Verified member</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="space-y-sm">
         <h3 className="text-headline-md text-on-surface">Leaderboard</h3>

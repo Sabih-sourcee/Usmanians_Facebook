@@ -126,6 +126,16 @@ export interface ReferralLeaderboardEntry {
   referralCount: number;
 }
 
+export interface ReferralSignupView {
+  id: string;
+  referredUserId: string;
+  name: string;
+  className: string | null;
+  campus: string | null;
+  signedUpAt: string;
+  verificationStatus: string;
+}
+
 export interface ReferralPrizeView {
   id: string;
   rankMin: number;

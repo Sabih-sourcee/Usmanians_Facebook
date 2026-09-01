@@ -1,6 +1,7 @@
 import { supabase } from "../supabase";
 import type { ReferralPrizeRow, ReferralRow } from "../../types/database";
-import type { ReferralLeaderboardEntry, ReferralPrizeView } from "../../types/models";
+import type { ReferralLeaderboardEntry, ReferralPrizeView, ReferralSignupView } from "../../types/models";
+import { formatRelativeTime } from "../time";
 
 export async function ensureReferralCode(userId: string): Promise<{ code: string | null; error: string | null }> {
   const { data, error } = await supabase.from("profiles").select("referral_code").eq("id", userId).single();
@@ -39,6 +40,56 @@ export async function fetchReferralCount(userId: string): Promise<number> {
     .select("*", { count: "exact", head: true })
     .eq("referrer_id", userId);
   return count || 0;
+}
+
+export async function fetchMyReferrals(userId: string): Promise<{
+  data: ReferralSignupView[];
+  error: string | null;
+}> {
+  const { data, error } = await supabase
+    .from("referrals")
+    .select(
+      "id, created_at, referred:profiles!referred_id(id, full_name, class_name, campus, verification_status)"
+    )
+    .eq("referrer_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) return { data: [], error: error.message };
+
+  type ReferredProfile = {
+    id: string;
+    full_name: string | null;
+    class_name: string | null;
+    campus: string | null;
+    verification_status: string;
+  };
+
+  type Row = {
+    id: string;
+    created_at: string;
+    referred: ReferredProfile | ReferredProfile[] | null;
+  };
+
+  const rows = (data || []) as Row[];
+
+  return {
+    data: rows
+      .map((row) => {
+        const referred = Array.isArray(row.referred) ? row.referred[0] : row.referred;
+        if (!referred) return null;
+        return {
+          id: row.id,
+          referredUserId: referred.id,
+          name: referred.full_name || "Usmanian",
+          className: referred.class_name,
+          campus: referred.campus,
+          signedUpAt: formatRelativeTime(row.created_at),
+          verificationStatus: referred.verification_status,
+        };
+      })
+      .filter((row): row is ReferralSignupView => row !== null),
+    error: null,
+  };
 }
 
 export async function fetchReferralLeaderboard(limit = 20): Promise<{
