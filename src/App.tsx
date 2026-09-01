@@ -15,6 +15,7 @@ import { AdminApprovalsPage } from "./pages/AdminApprovalsPage";
 import { NotesPage } from "./pages/NotesPage";
 import { RewardsPage } from "./pages/RewardsPage";
 import { ReferralsPage } from "./pages/ReferralsPage";
+import { DonatePage } from "./pages/DonatePage";
 
 const PublicOnlyRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, authStatus } = useAuth();
@@ -78,6 +79,7 @@ export function AppRoutes() {
         <Route path="/notes" element={<NotesPage />} />
         <Route path="/rewards" element={<RewardsPage />} />
         <Route path="/referrals" element={<ReferralsPage />} />
+        <Route path="/donate" element={<DonatePage />} />
         <Route path="/admin" element={<AdminApprovalsPage />} />
       </Route>
 

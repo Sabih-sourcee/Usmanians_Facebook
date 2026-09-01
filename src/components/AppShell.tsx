@@ -22,6 +22,7 @@ export const AppShell: React.FC<AppShellProps> = ({ pageTitle, children }) => {
     else if (path.startsWith("/notes")) title = "Notes";
     else if (path.startsWith("/rewards")) title = "Rewards";
     else if (path.startsWith("/referrals")) title = "Referrals";
+    else if (path.startsWith("/donate")) title = "Donate us";
     else if (path.startsWith("/admin")) title = "Admin";
     else title = "Home";
   }

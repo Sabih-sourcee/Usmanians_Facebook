@@ -92,6 +92,15 @@ export const Header: React.FC<HeaderProps> = ({ pageTitle = "Home" }) => {
             </div>
           </Link>
 
+          <Link
+            to="/donate"
+            aria-label="Donate us"
+            className="min-h-[44px] px-sm flex items-center justify-center text-label-md font-semibold text-primary hover:bg-surface-container rounded-lg shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+          >
+            <span className="sm:hidden">Donate</span>
+            <span className="hidden sm:inline">Donate us</span>
+          </Link>
+
           <div className="flex items-center gap-0.5 shrink-0">
             <button
               type="button"
