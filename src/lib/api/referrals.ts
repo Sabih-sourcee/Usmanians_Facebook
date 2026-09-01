@@ -15,23 +15,14 @@ export async function ensureReferralCode(userId: string): Promise<{ code: string
   return { code, error: null };
 }
 
-export async function recordReferral(referrerCode: string, referredUserId: string): Promise<{ error: string | null }> {
-  const { data: referrer, error } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("referral_code", referrerCode.trim().toUpperCase())
-    .maybeSingle();
-  if (error) return { error: error.message };
-  if (!referrer) return { error: null };
-  const referrerId = (referrer as { id: string }).id;
-  if (referrerId === referredUserId) return { error: null };
+export async function recordReferral(referrerCode: string, _referredUserId?: string): Promise<{ error: string | null }> {
+  const code = referrerCode.trim();
+  if (!code) return { error: null };
 
-  const { error: insertErr } = await supabase.from("referrals").insert({
-    referrer_id: referrerId,
-    referred_id: referredUserId,
+  const { error } = await supabase.rpc("record_referral_signup", {
+    p_referral_code: code,
   });
-  if (insertErr && !insertErr.message.includes("duplicate")) return { error: insertErr.message };
-  return { error: null };
+  return { error: error?.message || null };
 }
 
 export async function fetchReferralCount(userId: string): Promise<number> {
