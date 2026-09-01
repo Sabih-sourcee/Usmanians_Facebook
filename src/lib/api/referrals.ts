@@ -3,6 +3,61 @@ import type { ReferralPrizeRow, ReferralRow } from "../../types/database";
 import type { ReferralLeaderboardEntry, ReferralPrizeView, ReferralSignupView } from "../../types/models";
 import { formatRelativeTime } from "../time";
 
+const PENDING_REFERRAL_KEY = "usmanian_pending_referral";
+
+/**
+ * Referral codes must survive the redirect from /signup?ref=CODE through
+ * email confirmation / admin approval, which can span multiple page loads
+ * and even multiple login attempts. We persist to localStorage (not
+ * sessionStorage) so the code isn't lost if the link opens in a new tab or
+ * the browser tab is closed before the signup call completes.
+ */
+export function storePendingReferralCode(code: string): void {
+  const trimmed = code.trim();
+  if (!trimmed) return;
+  try {
+    localStorage.setItem(PENDING_REFERRAL_KEY, trimmed);
+  } catch (err) {
+    console.error("Unable to persist referral code:", err);
+  }
+}
+
+export function getPendingReferralCode(): string | null {
+  try {
+    return localStorage.getItem(PENDING_REFERRAL_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingReferralCode(): void {
+  try {
+    localStorage.removeItem(PENDING_REFERRAL_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Attempts to record a pending referral (if one is stored) for the current
+ * session and clears it once it either succeeds or is confirmed irrelevant
+ * (no code stored, or the RPC explicitly reports no matching referrer).
+ * Safe to call on every login/session load — record_referral_signup is
+ * idempotent (referred_id is unique, and a no-op if already recorded).
+ */
+export async function flushPendingReferral(): Promise<void> {
+  const code = getPendingReferralCode();
+  if (!code) return;
+
+  const { error } = await recordReferral(code);
+  if (error) {
+    console.error("Referral recording failed, will retry on next login:", error);
+    return;
+  }
+
+  clearPendingReferralCode();
+}
+
 export async function ensureReferralCode(userId: string): Promise<{ code: string | null; error: string | null }> {
   const { data, error } = await supabase.from("profiles").select("referral_code").eq("id", userId).single();
   if (error) return { code: null, error: error.message };
@@ -22,6 +77,11 @@ export async function recordReferral(referrerCode: string, _referredUserId?: str
   const { error } = await supabase.rpc("record_referral_signup", {
     p_referral_code: code,
   });
+
+  if (error) {
+    console.error("record_referral_signup failed:", error.message);
+  }
+
   return { error: error?.message || null };
 }
 

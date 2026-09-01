@@ -12,7 +12,7 @@ import type { ProfileRow } from "../types/database";
 import type { UserProfile } from "../types/models";
 import { profileToUser, loadProfileStats } from "../lib/api/profiles";
 import { PointsService } from "../lib/api/points";
-import { recordReferral } from "../lib/api/referrals";
+import { flushPendingReferral, storePendingReferralCode } from "../lib/api/referrals";
 import { isStudentCidAvailable } from "../lib/api/auth";
 import { DUPLICATE_CID_MESSAGE, normalizeAuthError } from "../lib/authErrors";
 
@@ -91,6 +91,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     setAuthStatus(statusFromProfile(nextProfile, true));
+
+    if (nextProfile) {
+      // Retries any referral that failed to record at signup time (e.g. a
+      // transient RPC error). Idempotent, so safe to call on every load.
+      void flushPendingReferral();
+    }
 
     if (nextProfile?.verification_status === "approved") {
       void PointsService.claimDailyLogin();
@@ -180,6 +186,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return { error: DUPLICATE_CID_MESSAGE };
       }
 
+      // Persist before calling signUp so the referral survives even if the
+      // page unloads (e.g. email confirmation redirect) before loadProfile's
+      // flush completes.
+      if (signupData.referralCode) {
+        storePendingReferralCode(signupData.referralCode);
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email: signupData.email.trim(),
         password: signupData.password,
@@ -200,9 +213,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       if (data.user) {
-        if (signupData.referralCode) {
-          await recordReferral(signupData.referralCode, data.user.id);
-        }
         await loadProfile(data.user);
       } else {
         setAuthStatus("pendingApproval");
