@@ -48,6 +48,7 @@ Entry: `main.tsx` → `App.tsx` + `index.css`. Auth: `AuthContext` → Supabase 
 | `/` `/feed` | Protected + AppShell | Composer, feed, vote, report |
 | `/friends` (`/groups` → redirect) | Protected | Friend search / requests |
 | `/activity` | Protected | Notifications |
+| `/donate` | Protected | Donation bank details |
 | `/profile` | Protected | Edit profile, posts, notes, logout |
 | `/admin` | Protected (admin role) | Approve/reject pending profiles |
 
