@@ -68,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({ pageTitle = "Home" }) => {
       <div className="max-w-2xl mx-auto">
         <div className="h-14 px-margin-mobile flex items-center justify-between gap-sm">
           <Link
-            to="/"
+            to="/feed"
             className="flex items-center gap-sm min-w-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-lg"
           >
             <span className="shrink-0 p-0.5 bg-surface-container-lowest rounded-full border border-outline-variant">

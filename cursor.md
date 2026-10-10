@@ -75,14 +75,17 @@ docs/superpowers/       → Feature specs & plans (e.g. teacher-reports feed)
 
 | Path | Access | Page / notes |
 |------|--------|----------------|
+| `/` | Public (logged-out) | SEO landing (`LandingPage`); approved users → `/feed` |
 | `/login`, `/signup` | Public only | AuthCard flows |
-| `/pending-approval` | Session, not approved | Waiting for admin |
-| `/`, `/feed` | Protected + AppShell | Composer, mixed feed, vote & report modals |
+| `/pending-approval` | Session, not approved | Waiting for admin (`noindex`) |
+| `/feed` | Protected + AppShell | Composer, mixed feed, vote & report modals (`noindex`) |
 | `/friends` | Protected | Search, requests (`/groups` redirects here) |
 | `/activity` | Protected | Notifications |
 | `/profile` | Protected | Edit profile, own posts, logout |
 | `/admin` | Protected (admin role in UI) | Approve/reject pending profiles |
 | `*` | → `/` | |
+
+**SEO (public only):** `index.html` meta + JSON-LD; `public/robots.txt`, `sitemap.xml`, `llms.txt`, `og/og-default.png`; route titles via `SeoHead` + `src/lib/seo.ts`. Private app routes are `noindex` / robots-disallowed. Canonical host: `https://usmanians-facebook.vercel.app`.
 
 AppShell: `Header` + `main` (pt ≈ 56px + safe) + `BottomNav`; canvas `.app-canvas`; width `max-w-2xl`.
 
@@ -235,6 +238,7 @@ Primary CTA pattern: `bg-primary` + `hover:bg-primary-container`.
 | Colours / spacing look wrong | `index.css`, `tailwind.config.js`, `usmanian.md` |
 | RLS denied errors | `02_rls.sql` + later migrations touching that table |
 | Deploy routing 404 | `vercel.json` SPA rewrite |
+| SEO / ranking / OG | `index.html`, `src/lib/seo.ts`, `SeoHead`, `LandingPage`, `public/robots.txt` + `sitemap.xml` + `llms.txt` |
 
 ---
 

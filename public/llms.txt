@@ -1,0 +1,28 @@
+# Usmanian
+
+> Private social network for Usman Public School System (UPSS) students and alumni.
+
+Usmanian is a CID-gated campus network. Membership requires a valid student CID, class, and campus. New accounts stay pending until an admin approves them. Only verified Usmanians can see social data.
+
+## Product facts
+
+- Audience: Usman Public School System students and alumni
+- Access model: CID signup → admin approval → verified social access
+- Privacy: friend requests need mutual consent; profiles are not public to the open web
+- Civic features: Vote for Principal; Report a Teacher (anonymous reporter privacy)
+- Official school reference: https://www.usman.edu.pk/
+
+## Public pages
+
+- [Home](https://usmanians-facebook.vercel.app/): Product overview and entry
+- [Log in](https://usmanians-facebook.vercel.app/login): Sign in for approved members
+- [Sign up](https://usmanians-facebook.vercel.app/signup): Request access with CID
+
+## Private app (not for indexing)
+
+Feed, friends, activity, profile, and admin require an approved session and are closed to search crawlers.
+
+## Contact
+
+- Site: https://usmanians-facebook.vercel.app/
+- School system: Usman Public School System (UPSS), Pakistan

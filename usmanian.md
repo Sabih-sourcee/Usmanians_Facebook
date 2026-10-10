@@ -43,9 +43,10 @@ Entry: `main.tsx` → `App.tsx` + `index.css`. Auth: `AuthContext` → Supabase 
 
 | Path | Access | Page |
 |------|--------|------|
+| `/` | Public (logged-out) | SEO landing; approved → `/feed` |
 | `/login` `/signup` | PublicOnly | AuthCard |
 | `/pending-approval` | Session + not approved | AuthCard pending |
-| `/` `/feed` | Protected + AppShell | Composer, feed, vote, report |
+| `/feed` | Protected + AppShell | Composer, feed, vote, report |
 | `/friends` (`/groups` → redirect) | Protected | Friend search / requests |
 | `/activity` | Protected | Notifications |
 | `/profile` | Protected | Edit profile, posts, notes, logout |

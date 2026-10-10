@@ -8,16 +8,101 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Usmanian" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="description" content="Private network for Usman Public School System students &amp; alumni" />
+    <meta name="application-name" content="Usmanian" />
+    <meta name="robots" content="index, follow" />
+    <meta name="description" content="Usmanian is the CID-gated private social network for Usman Public School System (UPSS) students and alumni. Privacy by default, friend consent, and campus-only access." />
+    <meta name="keywords" content="Usmanian, Usman Public School System, UPSS, Usmanians, private school social network, CID, alumni network, Pakistan" />
+    <link rel="canonical" href="https://usmanians-facebook.vercel.app/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_PK" />
+    <meta property="og:site_name" content="Usmanian" />
+    <meta property="og:url" content="https://usmanians-facebook.vercel.app/" />
+    <meta property="og:title" content="Usmanian — Private Social Network for UPSS Students &amp; Alumni" />
+    <meta property="og:description" content="CID-gated private network for Usman Public School System students and alumni. Privacy by default. Friend consent. Campus civic tools." />
+    <meta property="og:image" content="https://usmanians-facebook.vercel.app/og/og-default.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Usmanian — UPSS private network" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Usmanian — Private Social Network for UPSS Students &amp; Alumni" />
+    <meta name="twitter:description" content="CID-gated private network for Usman Public School System students and alumni." />
+    <meta name="twitter:image" content="https://usmanians-facebook.vercel.app/og/og-default.png" />
+
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <title>Usmanian</title>
+    <title>Usmanian — Private Social Network for UPSS Students &amp; Alumni</title>
+
+    <!-- Organization + WebApplication JSON-LD (server HTML — preferred for crawlers) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://usmanians-facebook.vercel.app/#organization",
+          "name": "Usmanian",
+          "url": "https://usmanians-facebook.vercel.app/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://usmanians-facebook.vercel.app/icons/icon-512.png",
+            "width": 512,
+            "height": 512
+          },
+          "description": "Private social network for Usman Public School System students and alumni.",
+          "parentOrganization": {
+            "@type": "EducationalOrganization",
+            "name": "Usman Public School System",
+            "alternateName": "UPSS",
+            "url": "https://www.usman.edu.pk/"
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://usmanians-facebook.vercel.app/#website",
+          "url": "https://usmanians-facebook.vercel.app/",
+          "name": "Usmanian",
+          "description": "CID-gated private social network for UPSS students and alumni.",
+          "publisher": { "@id": "https://usmanians-facebook.vercel.app/#organization" },
+          "inLanguage": "en"
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://usmanians-facebook.vercel.app/#app",
+          "name": "Usmanian",
+          "url": "https://usmanians-facebook.vercel.app/",
+          "applicationCategory": "SocialNetworkingApplication",
+          "operatingSystem": "Web",
+          "description": "Private campus social network for Usman Public School System. CID signup, admin approval, verified-only access.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "PKR"
+          },
+          "publisher": { "@id": "https://usmanians-facebook.vercel.app/#organization" }
+        }
+      ]
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body>
+    <!-- Crawlable noscript fallback (CSR SPA) -->
+    <noscript>
+      <main>
+        <h1>Usmanian</h1>
+        <p>Usmanian is the private social network for Usman Public School System (UPSS) students and alumni. CID-gated membership, privacy by default, and campus-only access.</p>
+        <p><a href="/signup">Join with your CID</a> · <a href="/login">Log in</a></p>
+        <p>Official school site: <a href="https://www.usman.edu.pk/">usman.edu.pk</a></p>
+      </main>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

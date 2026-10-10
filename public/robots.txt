@@ -1,0 +1,54 @@
+# Usmanian — crawl policy (claude-seo technical + GEO + agentic)
+# Public marketing/auth pages are indexable. Private app surfaces are disallowed.
+
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /signup
+Allow: /og/
+Allow: /icons/
+Allow: /manifest.json
+Disallow: /feed
+Disallow: /friends
+Disallow: /groups
+Disallow: /activity
+Disallow: /profile
+Disallow: /admin
+Disallow: /pending-approval
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+
+# Prefer search citability; block training-only crawlers (seo-geo / seo-technical).
+User-agent: GPTBot
+Disallow: /
+Content-Signal: search=no, ai-input=no, ai-train=no
+
+User-agent: Google-Extended
+Disallow: /
+Content-Signal: search=no, ai-input=no, ai-train=no
+
+User-agent: Bytespider
+Disallow: /
+Content-Signal: search=no, ai-input=no, ai-train=no
+
+User-agent: CCBot
+Disallow: /
+Content-Signal: search=no, ai-input=no, ai-train=no
+
+User-agent: ClaudeBot
+Disallow: /
+Content-Signal: search=no, ai-input=no, ai-train=no
+
+# Allow AI search citability crawlers explicitly
+User-agent: OAI-SearchBot
+Allow: /
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+
+User-agent: Claude-SearchBot
+Allow: /
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+
+User-agent: PerplexityBot
+Allow: /
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+
+Sitemap: https://usmanians-facebook.vercel.app/sitemap.xml

@@ -61,7 +61,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode }) => {
       return;
     }
     // ProtectedRoute / PublicOnlyRoute will redirect based on verification_status
-    navigate("/");
+    navigate("/feed");
   };
 
   const handleSignupSubmit = async (e: React.FormEvent) => {
@@ -106,7 +106,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode }) => {
         <p className="text-body-md text-on-surface-variant">Welcome back to Usmanian portal.</p>
         <button
           type="button"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/feed")}
           className="w-full min-h-[48px] bg-primary text-on-primary font-semibold rounded-xl cursor-pointer hover:bg-primary-container focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
         >
           Go to home feed

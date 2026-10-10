@@ -1,9 +1,10 @@
 {
   "name": "Usmanian",
   "short_name": "Usmanian",
-  "description": "Private network for Usman Public School System students & alumni",
-  "start_url": "/",
+  "description": "CID-gated private network for Usman Public School System students and alumni",
+  "start_url": "/feed",
   "scope": "/",
+  "id": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#0B6E3D",
