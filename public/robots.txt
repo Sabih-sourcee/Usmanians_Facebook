@@ -51,4 +51,4 @@ User-agent: PerplexityBot
 Allow: /
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 
-Sitemap: https://usmanians-facebook.vercel.app/api/sitemap.xml
+Sitemap: https://usmanians-facebook.vercel.app/api/sitemap
