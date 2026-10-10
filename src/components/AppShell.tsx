@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Header } from "./Header";
 import { BottomNav } from "./BottomNav";
+import { NotificationPrompt } from "./NotificationPrompt";
 
 interface AppShellProps {
   pageTitle?: string;
@@ -29,6 +30,7 @@ export const AppShell: React.FC<AppShellProps> = ({ pageTitle, children }) => {
         <div className="py-md">{children || <Outlet />}</div>
       </main>
       <BottomNav />
+      <NotificationPrompt />
     </div>
   );
 };

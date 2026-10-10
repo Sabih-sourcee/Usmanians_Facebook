@@ -10,6 +10,8 @@ interface BottomSheetProps {
   panelClassName?: string;
   contentClassName?: string;
   footerClassName?: string;
+  /** When false, tapping the backdrop does not call onClose. Defaults to true. */
+  closeOnBackdropClick?: boolean;
 }
 
 export const BottomSheet: React.FC<BottomSheetProps> = ({
@@ -21,6 +23,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   panelClassName = "",
   contentClassName = "",
   footerClassName = "",
+  closeOnBackdropClick = true,
 }) => {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -67,7 +70,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
       style={{ paddingBottom: keyboardInset || undefined }}
       role="presentation"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (closeOnBackdropClick && e.target === e.currentTarget) onClose();
       }}
     >
       <div
